@@ -152,10 +152,16 @@ body {
 .reaction-word { display:block; font-size:clamp(13px,3.9vw,17px); font-weight:650; overflow-wrap:anywhere; }
 .hints-title { color:var(--muted); font-size:13px; }
 .hints-note { font-size:12px; color:var(--muted); line-height:1.4; margin-bottom:22px; }
+#online-room-hud { display:none; position:fixed; z-index:1000; top:8px; left:10px; right:10px; align-items:center; justify-content:space-between; gap:8px; pointer-events:none; }
+#online-room-hud.visible { display:flex; }
+#online-room-hud .room-hud-code { font-size:12px; color:var(--muted); background:rgba(255,255,255,.9); padding:5px 8px; border-radius:8px; pointer-events:auto; }
+#online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">window.addEventListener('load', () => { restoreOnlineSession(); });
+</script>
 </head>
 <body>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -277,7 +283,6 @@ body {
     <div class="word" id="online-the-word"></div>
     <div class="letter-box" id="online-the-letter"></div>
     <div class="reaction-hints" id="online-reaction-hints"></div>
-    <div class="hints-note">Произноси выделенные слова. Подписи — только для тебя.</div>
     <button class="btn btn-primary" onclick="onlineShowGuess()">Угадали ✅</button>
     <button class="btn btn-ghost" onclick="onlineReplaceWord()">Заменить ↻</button>
   </div>
@@ -681,7 +686,7 @@ async function onlineCreateRoom(){
   if(!created){ alert('Не удалось подобрать код комнаты. Попробуй ещё раз.'); return; }
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version || 0;
-  onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+  saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 
 async function onlineJoinRoom(){
@@ -696,10 +701,56 @@ async function onlineJoinRoom(){
   online.roomId=data.id; online.code=data.code; online.hostId=data.host_id;
   online.state=data.game_state || {}; online.version=data.version || 0;
   if(!Array.isArray(online.state.players)){ alert('Данные комнаты повреждены'); return; }
-  onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+  saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 
 function makePlayerToken(){ return makePlayerId()+'-'+makePlayerId(); }
+
+const ONLINE_SESSION_KEY = 'obyasnyarium_online_session_v1';
+function saveOnlineSession(){
+  if(!online.roomId || !online.playerToken) return;
+  try { localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
+    roomId:online.roomId, code:online.code, playerId:online.playerId,
+    playerToken:online.playerToken, name:online.name, hostId:online.hostId
+  })); } catch(e) { console.warn('Не удалось сохранить комнату', e); }
+}
+function updateOnlineHud(){
+  const hud=document.getElementById('online-room-hud');
+  const code=document.getElementById('online-hud-code');
+  const stop=document.getElementById('online-hud-stop');
+  if(!hud || !code || !stop) return;
+  const active=!!(online.roomId && online.playerToken);
+  hud.classList.toggle('visible',active);
+  code.textContent=active ? 'Комната: '+online.code : '';
+  stop.style.display=active && online.playerId===online.hostId ? 'block' : 'none';
+}
+async function onlineStopGame(){
+  if(!online.roomId || online.playerId!==online.hostId) return;
+  if(!confirm('Остановить игру и вернуться в комнату ожидания?')) return;
+  online.state.status='lobby';
+  online.state.currentIdx=0; online.state.round=1;
+  online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
+  (online.state.players||[]).forEach(p=>p.score=0);
+  await onlineSave();
+}
+async function restoreOnlineSession(){
+  let saved;
+  try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
+  if(!saved || !saved.roomId || !saved.playerToken || !saved.playerId) return;
+  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null};
+  const {data,error}=await supabaseClient.rpc('get_room_state',{
+    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken
+  });
+  if(error || !data){
+    try { localStorage.removeItem(ONLINE_SESSION_KEY); } catch(e) {}
+    online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
+    updateOnlineHud();
+    return;
+  }
+  online.state=data.game_state||{}; online.hostId=data.host_id; online.version=data.version||0;
+  online.code=data.code||online.code;
+  saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); onlineRenderState();
+}
 
 function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
@@ -719,7 +770,7 @@ async function onlineSync(){
     const changed = data.version !== online.version || JSON.stringify(data.game_state) !== JSON.stringify(online.state) || data.host_id !== online.hostId;
     if(changed){
       online.state=data.game_state || {}; online.hostId=data.host_id; online.version=data.version || 0;
-      onlineRenderState();
+      saveOnlineSession(); updateOnlineHud(); onlineRenderState();
     }
   } finally { online.pollBusy=false; }
 }
@@ -735,7 +786,7 @@ async function onlineSave(){
     return false;
   }
   if(data){ online.state=data.game_state || online.state; online.hostId=data.host_id; online.version=data.version ?? online.version+1; }
-  onlineRenderState();
+  saveOnlineSession(); updateOnlineHud(); onlineRenderState();
   return true;
 }
 
@@ -828,8 +879,9 @@ async function onlineLeaveRoom(){
     if(error) console.warn('Не удалось выйти из комнаты:',error.message);
   }
   if(online.pollTimer) clearInterval(online.pollTimer);
+  try { localStorage.removeItem(ONLINE_SESSION_KEY); } catch(e) {}
   online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
-  go('home');
+  updateOnlineHud(); go('home');
 }
 
 </script>

@@ -168,7 +168,7 @@ body {
 </script>
 </head>
 <body>
-<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-recovery" onclick="showRecoveryCode()">Код игрока</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -251,6 +251,7 @@ body {
   <div class="center-stack">
     <input class="input" id="online-join-name" placeholder="Твоё имя" maxlength="20">
     <input class="input" id="online-join-code" placeholder="Код комнаты" maxlength="5" inputmode="numeric">
+    <input class="input" id="online-recovery-code" placeholder="Код игрока (если возвращаешься)" maxlength="1200">
     <button class="btn btn-primary" onclick="onlineJoinRoom()">Войти</button>
     <button class="btn btn-secondary" id="online-resume-btn" style="display:none" onclick="restoreOnlineSession(true)">Продолжить прошлую комнату</button>
     <button class="btn btn-ghost" onclick="go('online')">← Назад</button>
@@ -698,6 +699,19 @@ async function onlineCreateRoom(){
 }
 
 async function onlineJoinRoom(){
+  const recoveryText=(document.getElementById('online-recovery-code')?.value||'').trim();
+  if(recoveryText){
+    let recovered;
+    try { recovered=JSON.parse(decodeURIComponent(escape(atob(recoveryText)))); } catch(e) { alert('Код игрока не распознан. Проверь, что скопирован полностью.'); return; }
+    if(!recovered || !recovered.roomId || !recovered.playerId || !recovered.playerToken){ alert('В коде игрока не хватает данных.'); return; }
+    const {data,error}=await supabaseClient.rpc('get_room_state',{p_room_id:recovered.roomId,p_player_id:recovered.playerId,p_player_token:recovered.playerToken});
+    if(error || !data){ alert('Не удалось восстановить игрока. Проверь код и убедись, что комната ещё существует.'); return; }
+    if(online.pollTimer) clearInterval(online.pollTimer);
+    online={...online,...recovered, pollTimer:null,pollBusy:false,version:data.version||0,state:data.game_state||{},hostId:data.host_id||recovered.hostId,code:data.code||recovered.code};
+    saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); onlineRenderState();
+    document.getElementById('online-recovery-code').value='';
+    return;
+  }
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){
@@ -721,6 +735,12 @@ async function onlineJoinRoom(){
 }
 
 function makePlayerToken(){ return makePlayerId()+'-'+makePlayerId(); }
+function showRecoveryCode(){
+  if(!online.roomId || !online.playerId || !online.playerToken){ alert('Сначала войди в комнату.'); return; }
+  const payload={roomId:online.roomId,playerId:online.playerId,playerToken:online.playerToken,code:online.code,name:online.name,hostId:online.hostId};
+  const recovery=btoa(unescape(encodeURIComponent(JSON.stringify(payload))));
+  prompt('Сохрани этот код в надёжном месте. Он даёт доступ к твоему игроку — не отправляй его посторонним:',recovery);
+}
 
 const ONLINE_SESSION_KEY = 'obyasnyarium_online_session_v1';
 function saveOnlineSession(){

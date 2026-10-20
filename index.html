@@ -156,12 +156,19 @@ body {
 #online-room-hud.visible { display:flex; }
 #online-room-hud .room-hud-code { font-size:12px; color:var(--muted); background:rgba(255,255,255,.9); padding:5px 8px; border-radius:8px; pointer-events:auto; }
 #online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
+#online-room-hud .room-hud-actions { display:flex; gap:6px; pointer-events:auto; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">window.addEventListener('load', () => { restoreOnlineSession(); });
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">window.addEventListener('load', () => {
+  let saved=null;
+  try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
+  const btn=document.getElementById('online-resume-btn');
+  if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
+  restoreOnlineSession();
+});
 </script>
 </head>
 <body>
-<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button></div>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -245,6 +252,7 @@ body {
     <input class="input" id="online-join-name" placeholder="Твоё имя" maxlength="20">
     <input class="input" id="online-join-code" placeholder="Код комнаты" maxlength="5" inputmode="numeric">
     <button class="btn btn-primary" onclick="onlineJoinRoom()">Войти</button>
+    <button class="btn btn-secondary" id="online-resume-btn" style="display:none" onclick="restoreOnlineSession(true)">Продолжить прошлую комнату</button>
     <button class="btn btn-ghost" onclick="go('online')">← Назад</button>
   </div>
 </div>
@@ -690,6 +698,14 @@ async function onlineCreateRoom(){
 }
 
 async function onlineJoinRoom(){
+  let saved=null;
+  try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
+  if(saved && saved.roomId && saved.playerToken && saved.playerId){
+    const restored=await restoreOnlineSession(true);
+    if(restored) return;
+    alert('Сначала нажми «Продолжить прошлую комнату». Не входи повторно под новым именем — это создаёт второго персонажа.');
+    return;
+  }
   const name = document.getElementById('online-join-name').value.trim().slice(0,20);
   const code = document.getElementById('online-join-code').value.trim().replace(/\D/g, '');
   if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }
@@ -718,11 +734,13 @@ function updateOnlineHud(){
   const hud=document.getElementById('online-room-hud');
   const code=document.getElementById('online-hud-code');
   const stop=document.getElementById('online-hud-stop');
-  if(!hud || !code || !stop) return;
+  const leave=document.getElementById('online-hud-leave');
+  if(!hud || !code || !stop || !leave) return;
   const active=!!(online.roomId && online.playerToken);
   hud.classList.toggle('visible',active);
   code.textContent=active ? 'Комната: '+online.code : '';
   stop.style.display=active && online.playerId===online.hostId ? 'block' : 'none';
+  leave.style.display=active ? 'block' : 'none';
 }
 async function onlineStopGame(){
   if(!online.roomId || online.playerId!==online.hostId) return;
@@ -733,23 +751,42 @@ async function onlineStopGame(){
   (online.state.players||[]).forEach(p=>p.score=0);
   await onlineSave();
 }
-async function restoreOnlineSession(){
+async function restoreOnlineSession(manual=false){
   let saved;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
-  if(!saved || !saved.roomId || !saved.playerToken || !saved.playerId) return;
-  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null};
-  const {data,error}=await supabaseClient.rpc('get_room_state',{
-    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken
-  });
-  if(error || !data){
-    try { localStorage.removeItem(ONLINE_SESSION_KEY); } catch(e) {}
-    online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
-    updateOnlineHud();
-    return;
+  const resumeBtn=document.getElementById('online-resume-btn');
+  if(!saved || !saved.roomId || !saved.playerToken || !saved.playerId){
+    if(resumeBtn) resumeBtn.style.display='none';
+    if(manual) alert('На этом устройстве не найдена сохранённая комната.');
+    return false;
   }
-  online.state=data.game_state||{}; online.hostId=data.host_id; online.version=data.version||0;
-  online.code=data.code||online.code;
-  saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); onlineRenderState();
+  if(resumeBtn) resumeBtn.style.display='block';
+  if(online.roomId && online.playerToken && online.playerId===saved.playerId && online.state){
+    onlineSubscribe(); updateOnlineHud(); onlineRenderState(); return true;
+  }
+  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null};
+  updateOnlineHud();
+  try {
+    const {data,error}=await supabaseClient.rpc('get_room_state',{
+      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken
+    });
+    if(error || !data){
+      if(resumeBtn) resumeBtn.style.display='block';
+      updateOnlineHud();
+      if(manual) alert('Не удалось восстановить комнату. Данные сохранены — попробуй ещё раз. Не создавай нового персонажа.');
+      return false;
+    }
+    online.state=data.game_state||{}; online.hostId=data.host_id; online.version=data.version||0;
+    online.code=data.code||online.code;
+    saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); onlineRenderState();
+    if(resumeBtn) resumeBtn.style.display='none';
+    return true;
+  } catch(e) {
+    if(resumeBtn) resumeBtn.style.display='block';
+    updateOnlineHud();
+    if(manual) alert('Нет связи с комнатой. Сохранённый вход оставлен, попробуй ещё раз.');
+    return false;
+  }
 }
 
 function onlineSubscribe(){

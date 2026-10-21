@@ -22,10 +22,12 @@ body {
   background: var(--bg);
   color: var(--text);
   min-height: 100vh;
+  min-height: 100dvh;
   overflow-x: hidden;
+  overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
-.screen { display: none; min-height: 100vh; padding: 24px; flex-direction: column; align-items: center; justify-content: center; }
+.screen { display: none; min-height: 100vh; min-height: 100dvh; padding: 24px; flex-direction: column; align-items: center; justify-content: center; }
 .screen.active { display: flex; }
 .btn {
   display: block;

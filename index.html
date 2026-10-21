@@ -28,7 +28,7 @@ body {
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
-.screen { display: none; min-height: 100vh; min-height: 100dvh; padding: 24px; flex-direction: column; align-items: center; justify-content: center; }
+.screen { display: none; min-height: 100vh; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); flex-direction: column; align-items: center; justify-content: center; }
 .screen.active { display: flex; animation: screen-in .22s ease-out; }
 @keyframes screen-in { from { opacity:.65; transform:translateY(5px); } to { opacity:1; transform:translateY(0); } }
 button:focus-visible, input:focus-visible, select:focus-visible { outline:3px solid rgba(232,130,107,.35); outline-offset:3px; }
@@ -1016,6 +1016,7 @@ function renderOnlineFinish(){
   if(document.body.dataset.confettiRoom!==String(online.roomId)){document.body.dataset.confettiRoom=String(online.roomId); launchConfetti();}
 }
 function launchConfetti(){
+  playTone(880,.12); setTimeout(()=>playTone(660,.18),140);
   const colors=['#f94144','#f9c74f','#43aa8b','#577590','#b5179e','#f3722c'];
   for(let i=0;i<90;i++){
     const piece=document.createElement('i'); piece.className='confetti-piece';

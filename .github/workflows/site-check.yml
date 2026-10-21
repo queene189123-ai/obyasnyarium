@@ -1,0 +1,52 @@
+name: Verify published site and custom domain
+
+on:
+  workflow_run:
+    workflows: ["pages build and deployment"]
+    types: [completed]
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    if: github.event.workflow_run.conclusion == 'success'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check published GitHub Pages URL
+        env:
+          PAGES_URL: https://queene189123-ai.github.io/obyasnyarium/
+          CUSTOM_URL: https://obyasnyarium.ru/
+        shell: bash
+        run: |
+          set -euo pipefail
+          status="$(curl --silent --show-error --output /tmp/obyasnyarium.html --write-out '%{http_code}' --max-time 25 --max-redirs 0 "$PAGES_URL")"
+          echo "GitHub Pages URL: $PAGES_URL"
+          echo "GitHub Pages HTTP status: $status"
+          if [ "$status" != "200" ]; then
+            echo "The published project URL did not return HTTP 200."
+            exit 1
+          fi
+          grep -q '<title>Объясняриум</title>' /tmp/obyasnyarium.html
+          grep -q 'Создать комнату' /tmp/obyasnyarium.html
+          grep -q "rpc('create_room'" /tmp/obyasnyarium.html
+          echo "PASS: real game HTML and online-room entry points are published."
+
+          custom_status="$(curl --silent --show-error --output /dev/null --write-out '%{http_code}' --connect-timeout 8 --max-time 15 --max-redirs 0 "$CUSTOM_URL" 2>/tmp/custom-domain-error.log || true)"
+          custom_error="$(cat /tmp/custom-domain-error.log || true)"
+          echo "Custom domain: $CUSTOM_URL"
+          echo "Custom domain HTTP status: ${custom_status:-000}"
+          if [ -n "$custom_error" ]; then echo "Custom domain diagnostic: $custom_error"; fi
+
+          {
+            echo "## Published-site check"
+            echo "- GitHub Pages: **HTTP $status** — real game HTML and online entry points verified."
+            echo "- Custom domain: **HTTP ${custom_status:-000}**."
+            if [ -n "$custom_error" ]; then echo "- Diagnostic: `$custom_error`"; fi
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          if [ "$custom_status" = "200" ]; then
+            echo "Custom domain is responding over HTTPS."
+          else
+            echo "Custom domain is not yet confirmed. GitHub Pages remains deployed at the project URL."
+          fi

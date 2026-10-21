@@ -1672,7 +1672,7 @@ function escapeAttr(s) { return s.replace(/'/g, "\'"); }
 // ===== ONLINE: SUPABASE =====
 const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
-const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+const supabaseClient = (window.supabase && typeof window.supabase.createClient === 'function') ? window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY) : null;
 
 let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null, connectionLost:false };
 
@@ -1683,6 +1683,7 @@ function makeRoomCode(){ return String(Math.floor(10000 + Math.random()*90000));
 function getOnlinePlayers(){ return online.state?.players || []; }
 
 async function onlineCreateRoom(){
+  if (!supabaseClient) { alert('Онлайн временно недоступен: не загрузился сетевой модуль. Офлайн-режим работает отдельно.'); return; }
   const name = (document.getElementById('online-host-name')?.value || '').trim().slice(0,20);
   if (!name) { document.getElementById('online-host-name')?.focus(); go('online-name'); return; }
   online.playerId = makePlayerId();
@@ -1709,6 +1710,7 @@ async function onlineCreateRoom(){
 }
 
 async function onlineJoinRoom(){
+  if (!supabaseClient) { alert('Онлайн временно недоступен: не загрузился сетевой модуль. Офлайн-режим работает отдельно.'); return; }
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){

@@ -481,6 +481,42 @@ const TIMEOUT = 20000;
     console.log('PASS: stale updates are rejected and host departure promotes the next player.');
 
 
+    // Regression-check the offline flow on the same mobile-sized browser.
+    if (await host.locator('#online-hud-leave').isVisible()) {
+      await host.locator('#online-hud-leave').click();
+      await host.locator('#screen-home.active').waitFor();
+    }
+    await host.getByRole('button', { name: 'Играть офлайн' }).click();
+    await host.locator('#screen-offline-setup.active').waitFor();
+    await host.locator('#player-input').fill('Offline Host');
+    await host.getByRole('button', { name: /Добавить игрока/ }).click();
+    await host.locator('#player-input').fill('Offline Guest');
+    await host.getByRole('button', { name: /Добавить игрока/ }).click();
+    await host.locator('#start-btn').click();
+    await host.locator('#screen-pass.active').waitFor();
+    await host.getByRole('button', { name: 'Погнали 🎲' }).click();
+    await host.locator('#screen-word.active').waitFor();
+    const offlineWord = (await host.locator('#the-word').innerText()).trim();
+    const offlineLetter = (await host.locator('#the-letter').innerText()).trim();
+    if (!offlineWord || !offlineLetter || await host.locator('#reaction-hints .reaction-hint').count() < 1) {
+      throw new Error('Offline game did not render a word, letter, and reaction hints');
+    }
+    await host.getByRole('button', { name: 'Угадали ✅' }).click();
+    await host.locator('#screen-guess.active').waitFor();
+    await host.getByRole('button', { name: 'Offline Guest', exact: true }).click();
+    await host.locator('#screen-pass.active').waitFor();
+    const offlineScores = await host.locator('#pass-scores').innerText();
+    if (!/Offline Host:\s*1/.test(offlineScores) || !/Offline Guest:\s*1/.test(offlineScores)) {
+      throw new Error('Offline score update failed: ' + offlineScores);
+    }
+    await host.reload({ waitUntil: 'domcontentloaded' });
+    await host.locator('#screen-pass.active').waitFor();
+    const restoredOfflineScores = await host.locator('#pass-scores').innerText();
+    if (!/Offline Host:\s*1/.test(restoredOfflineScores) || !/Offline Guest:\s*1/.test(restoredOfflineScores)) {
+      throw new Error('Offline session did not restore scores after reload: ' + restoredOfflineScores);
+    }
+    console.log('PASS: offline word/letter/hints, scoring, and reload restoration work on mobile.');
+
     if (dialogs.length) throw new Error('Unexpected browser dialogs/errors: ' + dialogs.join(' | '));
     console.log('PASS: two browsers synced the lobby, word and scores; finishing/rematch reset scores, and a guest page reload restored the same room.');
   } finally {

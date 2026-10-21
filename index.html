@@ -1632,13 +1632,21 @@ function renderOnlineScore(){
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
 async function onlineLeaveRoom(){
-  if(online.roomId && online.playerToken){
-    const {error}=await supabaseClient.rpc('leave_room', {
-      p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
-    });
-    if(error) console.warn('Не удалось выйти из комнаты:',error.message);
-  }
+  // Invalidate in-flight polls/saves immediately, before awaiting the server.
+  const leavingRoomId=online.roomId, leavingPlayerId=online.playerId, leavingPlayerToken=online.playerToken;
   if(online.pollTimer) clearInterval(online.pollTimer);
+  onlinePollGeneration++;
+  online.pollBusy=false;
+  if(leavingRoomId && leavingPlayerToken){
+    try {
+      const {error}=await supabaseClient.rpc('leave_room', {
+        p_room_id:leavingRoomId, p_player_id:leavingPlayerId, p_player_token:leavingPlayerToken
+      });
+      if(error) console.warn('Не удалось выйти из комнаты:',error.message);
+    } catch(e) {
+      console.warn('Не удалось выйти из комнаты:',e);
+    }
+  }
   try {
     localStorage.removeItem(ONLINE_SESSION_KEY);
     sessionStorage.removeItem('obyasnyarium_restore_on_reload');

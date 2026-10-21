@@ -1006,12 +1006,12 @@ window.addEventListener('load', () => {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices">
-    <button class="mode-card mode-offline" onclick="document.querySelectorAll(\'.screen\').forEach(function(s){s.classList.remove(\'active\')});document.getElementById(\'screen-offline-setup\').classList.add(\'active\');if(typeof renderPlayers===\'function\')renderPlayers()">
+    <button class="mode-card mode-offline" onclick="document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');if(typeof renderPlayers==='function')renderPlayers()">
       <span class="mode-art" aria-hidden="true">🎲</span>
       <span class="mode-label">Офлайн</span>
       <span class="mode-caption">Все рядом</span>
     </button>
-    <button class="mode-card mode-online" onclick="document.querySelectorAll(\'.screen\').forEach(function(s){s.classList.remove(\'active\')});document.getElementById(\'screen-online\').classList.add(\'active\')">
+    <button class="mode-card mode-online" onclick="document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')});document.getElementById('screen-online').classList.add('active')">
       <span class="mode-art" aria-hidden="true">🌐</span>
       <span class="mode-label">Онлайн</span>
       <span class="mode-caption">Играй на расстоянии</span>

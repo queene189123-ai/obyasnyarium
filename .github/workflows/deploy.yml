@@ -5,6 +5,8 @@ on:
     paths:
       - "index.html"
       - "favicon.svg"
+      - "robots.txt"
+      - "sitemap.xml"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 

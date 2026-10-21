@@ -194,6 +194,23 @@ jobs:
           for marker in ["document.addEventListener('visibilitychange'", "window.addEventListener('offline'", "window.addEventListener('online'"]:
               if marker not in subscribe:
                   raise SystemExit("Online reconnect handling is missing: " + marker)
+          # Prevent double taps from mutating local state while a previous move is being saved.
+          guarded_handlers = [
+              ("async function onlineStartGame()", "function onlineRenderState()"),
+              ("async function onlineShowWord()", "function renderOnlineWord()"),
+              ("async function onlineShowGuess()", "function renderOnlineGuess()"),
+              ("async function onlineAwardPoint(", "function renderOnlineResult()"),
+              ("async function onlineContinueAfterResult()", "async function onlineReplaceWord()"),
+              ("async function onlineReplaceWord()", "async function onlineNextPlayer()"),
+              ("async function onlineNextPlayer()", "function onlineNextState()"),
+              ("async function onlineBackToLobby()", "function renderOnlineLobby()"),
+              ("async function onlineRematch()", "function launchConfetti()"),
+          ]
+          for start_signature, end_signature in guarded_handlers:
+              body = function_body(start_signature, end_signature)
+              first_guard = body.split("{", 1)[1][:180]
+              if "online.saving" not in first_guard:
+                  raise SystemExit("Online action must reject duplicate input while a save is pending: " + start_signature)
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

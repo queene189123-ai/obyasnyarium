@@ -366,6 +366,12 @@ window.addEventListener('load', () => {
   <button class="btn btn-ghost" onclick="onlineNextPlayer()">Никто не угадал</button>
 </div>
 
+<div class="screen" id="screen-online-result">
+  <div class="title" style="font-size:28px">Ответ засчитан!</div>
+  <div class="subtitle" id="online-result-message"></div>
+  <button class="btn btn-primary" id="online-result-continue" onclick="onlineContinueAfterResult()">Следующий ход →</button>
+</div>
+
 <div class="screen" id="screen-online-score">
   <div class="title" style="font-size:32px">Очки</div>
   <div class="subtitle" id="online-score-round"></div>
@@ -1058,9 +1064,10 @@ function onlineRenderState(){
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
   if(s.status==='guess'){
     if(onlineCurrentPlayer()?.id===online.playerId){ renderOnlineGuess(); go('online-guess'); }
-    else { renderOnlinePass(); go('online-pass'); }
+    else { renderOnlinePass(); go('online-pass'); document.getElementById('online-pass-title').textContent='Ведущий выбирает того, кто правильно ответил'; document.getElementById('online-show-word-btn').style.display='none'; }
     return;
   }
+  if(s.status==='result'){ renderOnlineResult(); go('online-result'); return; }
   if(s.status==='score'){ renderOnlineScore(); go('online-score'); return; }
   if(s.status==='finished'){ renderOnlineFinish(); go('online-finish'); return; }
 }
@@ -1109,9 +1116,22 @@ function renderOnlineGuess(){
 async function onlineAwardPoint(guesserId){
   if(onlineCurrentPlayer()?.id!==online.playerId) return;
   const current=onlineCurrentPlayer(); const guesser=getOnlinePlayers().find(p=>p.id===guesserId);
-  if(current) current.score=(current.score||0)+1;
-  if(guesser) guesser.score=(guesser.score||0)+1;
+  if(!current || !guesser) return;
+  current.score=(current.score||0)+1;
+  guesser.score=(guesser.score||0)+1;
+  online.state.selectedGuesserId=guesser.id;
+  online.state.status='result';
+  await onlineSave();
+}
+function renderOnlineResult(){
+  const guesser=getOnlinePlayers().find(p=>p.id===online.state.selectedGuesserId);
+  document.getElementById('online-result-message').textContent=guesser?guesser.name+' правильно ответил! Очко получает он и объясняющий.':'Ведущий выбрал правильный ответ.';
+  document.getElementById('online-result-continue').style.display=onlineCurrentPlayer()?.id===online.playerId?'block':'none';
+}
+async function onlineContinueAfterResult(){
+  if(onlineCurrentPlayer()?.id!==online.playerId || online.state.status!=='result') return;
   onlineNextState();
+  online.state.selectedGuesserId=null;
   await onlineSave();
 }
 async function onlineReplaceWord(){ if(onlineCurrentPlayer()?.id!==online.playerId) return; onlinePickWord(); await onlineSave(); }

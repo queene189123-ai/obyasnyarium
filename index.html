@@ -2025,6 +2025,29 @@ async function onlineLeaveRoom(){
   updateOnlineHud(); go('home');
 }
 
+
+/* Надёжная навигация: не даём ошибке сохранения блокировать смену экрана. */
+window.go = function(id) {
+  const target = document.getElementById('screen-' + id);
+  if (!target) {
+    console.error('Объясняриум: экран не найден:', id);
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(screen => screen.classList.remove('active'));
+  target.classList.add('active');
+  if (id === 'offline-setup') {
+    try { renderPlayers(); } catch (e) { console.error('Ошибка списка игроков:', e); }
+  }
+  try {
+    if (id === 'home') {
+      localStorage.removeItem('obyasnyarium_offline_game_v1');
+      sessionStorage.removeItem('obyasnyarium_offline_restore_on_reload');
+    } else if (typeof saveOfflineGame === 'function') {
+      saveOfflineGame(id);
+    }
+  } catch (e) { console.warn('Ошибка сохранения состояния:', e); }
+};
+
 </script>
 
 

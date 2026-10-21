@@ -957,8 +957,11 @@ function restoreOfflineGame() {
   if (!saved || !Array.isArray(saved.players) || saved.players.length < 1) return false;
   state.players = saved.players;
   state.scores = saved.scores || {};
-  state.currentIdx = Number.isInteger(saved.currentIdx) ? saved.currentIdx : 0;
-  state.round = Number.isInteger(saved.round) ? saved.round : 1;
+  // Повреждённое или устаревшее сохранение не должно оставить игру без текущего игрока.
+  state.currentIdx = Number.isInteger(saved.currentIdx)
+    ? Math.min(Math.max(saved.currentIdx, 0), saved.players.length - 1)
+    : 0;
+  state.round = Number.isInteger(saved.round) && saved.round > 0 ? saved.round : 1;
   state.currentWord = saved.currentWord || '';
   state.currentLetter = saved.currentLetter || '';
   state.usedWords = new Set(Array.isArray(saved.usedWords) ? saved.usedWords : []);

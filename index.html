@@ -163,6 +163,8 @@ body {
 .hints-note { font-size:12px; color:var(--muted); line-height:1.4; margin-bottom:22px; }
 #online-room-hud { display:none; position:fixed; z-index:1000; top:8px; left:10px; right:10px; align-items:center; justify-content:space-between; gap:8px; pointer-events:none; }
 #online-room-hud.visible { display:flex; }
+#online-room-hud .room-hud-connection { font-size:11px; color:#21834a; white-space:nowrap; }
+#online-room-hud .room-hud-connection.lost { color:#c63838; }
 #online-room-hud .room-hud-code { font-size:12px; color:var(--muted); background:rgba(255,255,255,.9); padding:5px 8px; border-radius:8px; pointer-events:auto; }
 #online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
 #online-room-hud .room-hud-actions { display:flex; gap:6px; pointer-events:auto; }
@@ -207,7 +209,7 @@ window.addEventListener('load', () => {
 </script>
 </head>
 <body>
-<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-finish" id="online-hud-finish" onclick="onlineFinishGame()" style="display:none">Закончить</button><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-finish" id="online-hud-finish" onclick="onlineFinishGame()" style="display:none">Закончить</button><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -772,7 +774,7 @@ const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null };
+let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null, connectionLost:false };
 
 function showOnlineJoin(){ go('online-join'); }
 function onlineShowName(){ go('online-name'); }
@@ -845,7 +847,9 @@ function updateOnlineHud(){
   const stop=document.getElementById('online-hud-stop');
   const leave=document.getElementById('online-hud-leave');
   const finishHud=document.getElementById('online-hud-finish');
+  const connection=document.getElementById('online-hud-connection');
   if(!hud || !code || !stop || !leave) return;
+  if(connection){ connection.textContent=online.connectionLost?'● Нет связи':'● На связи'; connection.classList.toggle('lost',!!online.connectionLost); }
   const active=!!(online.roomId && online.playerToken);
   hud.classList.toggle('visible',active);
   code.textContent=active ? 'Комната: '+online.code : '';
@@ -917,13 +921,15 @@ async function onlineSync(){
     const {data,error}=await supabaseClient.rpc('get_room_state', {
       p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
     });
-    if(error || !data) return;
+    if(error || !data){ online.connectionLost=true; updateOnlineHud(); return; }
+    online.connectionLost=false; updateOnlineHud();
     const changed = data.version !== online.version || JSON.stringify(data.game_state) !== JSON.stringify(online.state) || data.host_id !== online.hostId;
     if(changed){
       online.state=data.game_state || {}; online.hostId=data.host_id; online.version=data.version || 0;
       saveOnlineSession(); updateOnlineHud(); onlineRenderState();
     }
   } catch(e) {
+    online.connectionLost=true; updateOnlineHud();
     console.warn('Не удалось обновить состояние онлайн-комнаты. Повторная попытка будет автоматически.',e);
   } finally { online.pollBusy=false; }
 }

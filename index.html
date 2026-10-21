@@ -2012,31 +2012,25 @@ async function onlineLeaveRoom(){
 </script>
 
 <script>
-/* Надёжная обработка нажатий на карточки режимов на iOS */
-(function(){
-  function bindHomeModeButtons(){
-    const offline=document.querySelector('#screen-home .mode-offline');
-    const online=document.querySelector('#screen-home .mode-online');
-    if(offline && !offline.dataset.modeBound){
-      offline.dataset.modeBound='1';
-      offline.addEventListener('click',function(event){
-        event.preventDefault();
-        event.stopPropagation();
-        document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')}); document.getElementById('screen-offline-setup').classList.add('active'); if(typeof renderPlayers==='function') renderPlayers();
-      },true);
-    }
-    if(online && !online.dataset.modeBound){
-      online.dataset.modeBound='1';
-      online.addEventListener('click',function(event){
-        event.preventDefault();
-        event.stopPropagation();
-        document.querySelectorAll('.screen').forEach(function(s){s.classList.remove('active')}); document.getElementById('screen-online').classList.add('active');
-      },true);
-    }
+/* Навигация главного экрана через делегирование событий */
+document.addEventListener('click', function(event) {
+  const card = event.target.closest('#screen-home .mode-card');
+  if (!card) return;
+  const target = card.classList.contains('mode-offline') ? 'offline-setup' :
+                 card.classList.contains('mode-online') ? 'online' : null;
+  if (!target) return;
+  event.preventDefault();
+  document.querySelectorAll('.screen').forEach(function(screen) {
+    screen.classList.remove('active');
+  });
+  const next = document.getElementById('screen-' + target);
+  if (!next) {
+    alert('Не найден экран: ' + target);
+    return;
   }
-  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindHomeModeButtons);
-  else bindHomeModeButtons();
-})();
+  next.classList.add('active');
+  if (target === 'offline-setup' && typeof renderPlayers === 'function') renderPlayers();
+}, true);
 </script>
 
 </body>

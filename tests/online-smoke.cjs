@@ -366,7 +366,7 @@ const TIMEOUT = 20000;
       const joined = [{ id: hostId, token: hostToken }];
       let failure = null;
       try {
-        for (let i = 1; i <= 19; i++) {
+        for (let i = 1; i <= 18; i++) {
           const id = 'capacity-player-' + i + '-' + crypto.randomUUID();
           const token = crypto.randomUUID() + crypto.randomUUID();
           const result = await supabaseClient.rpc('join_room', {
@@ -378,6 +378,29 @@ const TIMEOUT = 20000;
           if (result.error || !result.data) throw new Error('join player ' + i + ': ' + (result.error?.message || 'no room returned'));
           joined.push({ id, token });
         }
+        // Race two players for the final slot: exactly one should join successfully.
+        const candidates = [1, 2].map(i => ({
+          id: 'capacity-race-' + i + '-' + crypto.randomUUID(),
+          token: crypto.randomUUID() + crypto.randomUUID()
+        }));
+        const raceResults = await Promise.all(candidates.map(player =>
+          supabaseClient.rpc('join_room', {
+            p_code: code,
+            p_player_id: player.id,
+            p_player_token: player.token,
+            p_name: 'Race player'
+          })
+        ));
+        const accepted = raceResults.filter(result => !!result.data && !result.error).length;
+        const rejected = raceResults.filter(result => !result.data && /ROOM_FULL/.test(result.error?.message || '')).length;
+        if (accepted !== 1 || rejected !== 1) {
+          throw new Error('Concurrent final-slot join was not serialized: ' + JSON.stringify(
+            raceResults.map(result => ({ accepted: !!result.data, error: result.error?.message || '' }))
+          ));
+        }
+        raceResults.forEach((result, index) => {
+          if (result.data && !result.error) joined.push(candidates[index]);
+        });
         const fullId = 'capacity-player-21-' + crypto.randomUUID();
         const full = await supabaseClient.rpc('join_room', {
           p_code: code,

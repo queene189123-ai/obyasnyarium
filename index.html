@@ -1358,7 +1358,7 @@ async function onlineSave(){
       if(/VERSION_CONFLICT/i.test(error.message || '')){
         // Не даём обработчику откатить локальное состояние поверх более свежего состояния комнаты.
         online.lastSaveConflict=true;
-        online.saving=false;
+        // Сохраняем блокировку действий и опроса до завершения восстановления состояния.
         // Запрашиваем актуальную версию напрямую: обычный опрос может быть занят старым запросом.
         try {
           const latest=await supabaseClient.rpc('get_room_state', {

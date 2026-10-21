@@ -106,6 +106,38 @@ const TIMEOUT = 20000;
       throw new Error('Server accepted leaving a room with an invalid player token: ' + JSON.stringify(wrongTokenLeave));
     }
 
+    const malformedInitialState = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('create_room', {
+        p_code: String(Math.floor(10000 + Math.random() * 90000)),
+        p_player_id: crypto.randomUUID(),
+        p_player_token: 'valid-looking-token-for-security-test-000000',
+        p_name: 'Malformed',
+        p_game_state: { status: 'lobby', players: [] }
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (malformedInitialState.hasData || !/INVALID_GAME_STATE/.test(malformedInitialState.error)) {
+      throw new Error('Server accepted malformed initial room state: ' + JSON.stringify(malformedInitialState));
+    }
+
+    const oversizedInitialState = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('create_room', {
+        p_code: String(Math.floor(10000 + Math.random() * 90000)),
+        p_player_id: crypto.randomUUID(),
+        p_player_token: 'valid-looking-token-for-security-test-000000',
+        p_name: 'Oversized',
+        p_game_state: {
+          status: 'lobby',
+          players: [{ id: 'oversized-test-player', name: 'Test', score: 0 }],
+          padding: 'x'.repeat(201000)
+        }
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (oversizedInitialState.hasData || !/INVALID_GAME_STATE/.test(oversizedInitialState.error)) {
+      throw new Error('Server accepted oversized initial room state: ' + JSON.stringify(oversizedInitialState));
+    }
+
     const start = host.locator('#online-start-btn');
     await start.waitFor({ state: 'visible' });
     await start.click();

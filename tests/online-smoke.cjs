@@ -58,6 +58,7 @@ const TIMEOUT = 20000;
     await host.locator('#online-host-name').fill('CI Host');
     await host.getByRole('button', { name: 'Создать', exact: true }).click();
     await host.locator('#screen-online-lobby.active').waitFor();
+    await host.setViewportSize({ width: 390, height: 844 });
     await assertNoHorizontalOverflow(host, 'host lobby at 390px');
     await host.setViewportSize({ width: 320, height: 740 });
     await assertNoHorizontalOverflow(host, 'host lobby at 320px');

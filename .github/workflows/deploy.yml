@@ -52,7 +52,7 @@ jobs:
           fi
           for url in "$PAGES_URL" "$CUSTOM_URL"; do
             echo "Checking $url"
-            curl --silent --show-error --location-trusted=false --output /tmp/obyasnyarium-response.html --write-out 'HTTP %{http_code}; redirect=%{redirect_url}; remote_ip=%{remote_ip}\n' --max-time 20 --max-redirs 0 "$url" || true
+            curl --silent --show-error --output /tmp/obyasnyarium-response.html --write-out 'HTTP %{http_code}; redirect=%{redirect_url}; remote_ip=%{remote_ip}\n' --max-time 20 --max-redirs 0 "$url" || true
           done
           status="$(curl --silent --show-error --output /tmp/obyasnyarium.html --write-out '%{http_code}' --max-time 20 --max-redirs 0 "$PAGES_URL" || true)"
           if [ "$status" = "200" ]; then

@@ -202,10 +202,11 @@ const TIMEOUT = 20000;
       }
       const state = latest.data.game_state || {};
       const players = Array.isArray(state.players) ? state.players : [];
-      const forgedPlayers = [
-        ...players.filter(player => player.id !== 'forged-nonmember'),
-        { id: 'forged-nonmember', name: 'Fake player', score: 0 }
-      ];
+      const forgedPlayers = players.map((player, index) =>
+        index === players.length - 1
+          ? { id: 'forged-nonmember', name: 'Fake player', score: 0 }
+          : player
+      );
       const { data, error } = await supabaseClient.rpc('update_room_state', {
         p_room_id: online.roomId,
         p_player_id: online.playerId,

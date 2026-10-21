@@ -1358,8 +1358,11 @@ async function onlineSync(){
       saveOnlineSession(); updateOnlineHud(); onlineRenderState();
     }
   } catch(e) {
-    online.connectionLost=true; updateOnlineHud();
-    console.warn('Не удалось обновить состояние онлайн-комнаты. Повторная попытка будет автоматически.',e);
+    // Ошибка запроса из уже закрытой комнаты не должна помечать новую комнату как отключённую.
+    if(pollGeneration===onlinePollGeneration && requestRoomId===online.roomId && requestPlayerId===online.playerId && requestPlayerToken===online.playerToken){
+      online.connectionLost=true; updateOnlineHud();
+      console.warn('Не удалось обновить состояние онлайн-комнаты. Повторная попытка будет автоматически.',e);
+    }
   } finally {
     // An older request must not release the lock owned by a newer subscription.
     if(pollGeneration===onlinePollGeneration) online.pollBusy=false;

@@ -45,4 +45,20 @@ jobs:
           if html.lower().count("<script") != html.lower().count("</script>"):
               raise SystemExit("Script tag count mismatch")
           print("Basic HTML structure looks consistent")
+          required = [
+              "async function onlineSave(",
+              "async function onlineSync(",
+              "async function onlineStartGame(",
+              "async function onlineAwardPoint(",
+              "async function onlineRematch(",
+              "function onlineSubscribe(",
+              "window.addEventListener('offline'",
+              "window.addEventListener('online'",
+          ]
+          missing = [item for item in required if item not in html]
+          if missing:
+              raise SystemExit("Missing critical online-game code: " + ", ".join(missing))
+          if "if(!online.lastSaveConflict) online.state=previousState;" not in html:
+              raise SystemExit("Missing conflict-safe rollback guard")
+          print("Critical online-game handlers and conflict guard are present")
           PY

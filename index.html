@@ -1235,8 +1235,15 @@ function launchConfetti(){
   }
 }
 async function shareOnlineRoom(){
-  if(!online.code)return;const link=location.origin+location.pathname+"?room="+encodeURIComponent(online.code);const message="Заходи в «Объясняриум»! Код комнаты: "+online.code+"\\n"+link;
-  try{if(navigator.share){await navigator.share({title:"Объясняриум",text:"Присоединяйся к игре!",url:link});}else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(message);alert("Ссылка и код комнаты скопированы! Отправь их друзьям.");}else{window.prompt("Скопируй ссылку и код комнаты:",message);}}catch(e){if(e.name!=="AbortError")window.prompt("Скопируй ссылку и код комнаты:",message);}
+  if(!online.code)return;
+  const link=location.origin+location.pathname+"?room="+encodeURIComponent(online.code);
+  const inviteText="Заходи в «Объясняриум»! Код комнаты: "+online.code;
+  const message=inviteText+"\\nСсылка для входа: "+link;
+  try{
+    if(navigator.share){await navigator.share({title:"Объясняриум — приглашение в игру",text:inviteText,url:link});}
+    else if(navigator.clipboard&&window.isSecureContext){await navigator.clipboard.writeText(message);alert("Ссылка и код комнаты скопированы! Отправь их друзьям.");}
+    else{window.prompt("Скопируй ссылку и код комнаты:",message);}
+  }catch(e){if(e.name!=="AbortError")window.prompt("Скопируй ссылку и код комнаты:",message);}
 }
 async function onlineBackToLobby(){
   if(online.playerId!==online.hostId) return;

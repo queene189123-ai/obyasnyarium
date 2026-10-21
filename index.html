@@ -382,6 +382,21 @@ body {
   #screen-home .small-text { margin-top:6px; }
 }
 
+/* Увеличенные главные кнопки */
+#screen-home .btn:not(.btn-ghost) {
+  min-height: 72px;
+  padding: 20px 24px;
+  font-size: 20px;
+  margin-bottom: 13px;
+}
+@media (max-height:760px) {
+  #screen-home .btn:not(.btn-ghost) {
+    min-height: 66px;
+    padding-top: 17px;
+    padding-bottom: 17px;
+  }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

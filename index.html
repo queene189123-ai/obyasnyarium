@@ -218,8 +218,11 @@ window.addEventListener('load', () => {
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   const btn=document.getElementById('online-resume-btn');
   if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
-  // Не восстанавливаем прошлую комнату автоматически: при открытии сайта показываем главный экран.
-  // Продолжить прошлую комнату можно вручную через кнопку в экране входа.
+  // После обновления страницы возвращаем игрока в ту же комнату.
+  // При новом открытии сайта (новая вкладка) показываем главный экран.
+  let restoreOnReload=false;
+  try { restoreOnReload=sessionStorage.getItem('obyasnyarium_restore_on_reload')==='1'; } catch(e) {}
+  if(restoreOnReload && !roomCode && saved && saved.roomId && saved.playerToken) restoreOnlineSession();
 });
 </script>
 </head>
@@ -877,10 +880,15 @@ function makePlayerToken(){ return makePlayerId()+'-'+makePlayerId(); }
 const ONLINE_SESSION_KEY = 'obyasnyarium_online_session_v1';
 function saveOnlineSession(){
   if(!online.roomId || !online.playerToken) return;
-  try { localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
-    roomId:online.roomId, code:online.code, playerId:online.playerId,
-    playerToken:online.playerToken, name:online.name, hostId:online.hostId
-  })); } catch(e) { console.warn('Не удалось сохранить комнату', e); }
+  try {
+    localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
+      roomId:online.roomId, code:online.code, playerId:online.playerId,
+      playerToken:online.playerToken, name:online.name, hostId:online.hostId
+    }));
+    // Маркер живёт только в текущей вкладке: после обновления восстановим комнату,
+    // а при новом открытии сайта покажем главный экран.
+    sessionStorage.setItem('obyasnyarium_restore_on_reload', '1');
+  } catch(e) { console.warn('Не удалось сохранить комнату', e); }
 }
 function updateOnlineHud(){
   const hud=document.getElementById('online-room-hud');
@@ -1151,7 +1159,10 @@ async function onlineLeaveRoom(){
     if(error) console.warn('Не удалось выйти из комнаты:',error.message);
   }
   if(online.pollTimer) clearInterval(online.pollTimer);
-  try { localStorage.removeItem(ONLINE_SESSION_KEY); } catch(e) {}
+  try {
+    localStorage.removeItem(ONLINE_SESSION_KEY);
+    sessionStorage.removeItem('obyasnyarium_restore_on_reload');
+  } catch(e) {}
   online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
   updateOnlineHud(); go('home');
 }

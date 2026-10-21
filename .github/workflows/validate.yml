@@ -226,6 +226,20 @@ jobs:
               first_guard = body.split("{", 1)[1][:180]
               if "online.saving" not in first_guard:
                   raise SystemExit("Online action must reject duplicate input while a save is pending: " + start_signature)
+          # Room creation must not replace a valid session until the server confirms success.
+          create_room = function_body("async function onlineCreateRoomInternal()", "async function onlineJoinRoomInternal()")
+          for marker in ["if (!name)", "supabaseClient.rpc('create_room'", "if(!error && data){ created=data; break; }", "if(!created){", "online.roomId=created.id", "saveOnlineSession()", "onlineSubscribe()", "renderOnlineLobby()"]:
+              if marker not in create_room:
+                  raise SystemExit("Room creation is missing required validation or success handling: " + marker)
+          if create_room.index("if(!created){") > create_room.index("online.roomId=created.id"):
+              raise SystemExit("Room creation must reject a failed server response before replacing the active session")
+          if "for(let i=0;i<10;i++)" not in create_room or "/duplicate|unique/i.test(error.message)" not in create_room:
+              raise SystemExit("Room creation must retry code collisions without masking unrelated errors")
+          # Joining should only save the new session after the server returns a valid room state.
+          join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
+          if join.index("if(error || !data)") > join.index("saveOnlineSession()"):
+              raise SystemExit("Room joining must reject a failed server response before saving the session")
+          print("Room creation/join failure paths and session-preservation checks passed")
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

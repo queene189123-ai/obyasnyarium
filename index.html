@@ -410,6 +410,166 @@ body {
   .screen { padding-left: 18px; padding-right: 18px; }
 }
 
+
+/* Дополнительный характер главного экрана: живее, но без детской стилистики */
+#screen-home {
+  isolation: isolate;
+  overflow: hidden;
+}
+#screen-home::before,
+#screen-home::after {
+  content: '';
+  position: absolute;
+  z-index: -1;
+  pointer-events: none;
+}
+#screen-home::before {
+  width: 210px;
+  height: 210px;
+  top: 17%;
+  left: -115px;
+  border: 1px solid rgba(117,98,220,.13);
+  border-radius: 42% 58% 63% 37% / 40% 42% 58% 60%;
+  box-shadow: 0 0 0 18px rgba(117,98,220,.025), 0 0 0 38px rgba(117,98,220,.018);
+  transform: rotate(-18deg);
+}
+#screen-home::after {
+  width: 145px;
+  height: 145px;
+  right: -82px;
+  bottom: 16%;
+  border: 1px solid rgba(241,138,120,.24);
+  border-radius: 50%;
+  box-shadow: 0 0 0 14px rgba(241,138,120,.045), 0 0 0 29px rgba(241,138,120,.025);
+}
+#screen-home .home-tagline {
+  position: relative;
+  border: 1px solid #e5ddff;
+  background: linear-gradient(110deg, rgba(255,255,255,.97), rgba(248,245,255,.94));
+  box-shadow: 0 8px 24px rgba(72,57,151,.09), inset 0 1px 0 #fff;
+}
+#screen-home .home-tagline::after {
+  content: '✳';
+  color: #f18a78;
+  font-size: 17px;
+  line-height: 1;
+  margin-left: 2px;
+}
+#screen-home .home-title {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  white-space: nowrap;
+  font-size: clamp(35px, 9.7vw, 54px);
+  letter-spacing: -1.7px;
+  margin-bottom: 36px;
+  text-shadow: 0 4px 0 rgba(40,35,63,.025);
+}
+#screen-home .home-title-o {
+  flex: 0 0 auto;
+  width: .9em;
+  height: .9em;
+  margin-right: 1px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  border: 3px solid #7562dc;
+  border-radius: 32% 42% 35% 43%;
+  background: linear-gradient(145deg, #f0ecff, #fff 72%);
+  color: #7562dc;
+  font-size: .88em;
+  font-weight: 900;
+  line-height: 1;
+  box-shadow: 3px 4px 0 rgba(117,98,220,.13);
+  transform: rotate(-5deg);
+}
+#screen-home .home-title-o::after {
+  width: 9px;
+  height: 9px;
+  top: -5px;
+  right: -5px;
+  box-shadow: 0 0 0 3px #fffdfb, 0 2px 7px rgba(241,138,120,.35);
+}
+#screen-home .btn {
+  position: relative;
+  overflow: hidden;
+  min-height: 62px;
+  padding-left: 54px;
+  padding-right: 24px;
+  text-align: left;
+  letter-spacing: -.2px;
+}
+#screen-home .btn::before {
+  position: absolute;
+  left: 21px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: grid;
+  place-items: center;
+  width: 25px;
+  height: 25px;
+  border-radius: 8px;
+  font-size: 15px;
+  font-weight: 800;
+}
+#screen-home .btn-primary::before {
+  content: '▶';
+  font-size: 10px;
+  color: #fff;
+  background: rgba(255,255,255,.18);
+  box-shadow: 0 0 0 1px rgba(255,255,255,.15);
+}
+#screen-home .btn-secondary::before {
+  content: '↗';
+  color: #6957ce;
+  background: #f0edff;
+}
+#screen-home .btn-primary {
+  background: linear-gradient(110deg, #8170e9 0%, #6956d2 58%, #5846bd 100%);
+  box-shadow: 0 5px 0 #4d3eaa, 0 15px 28px rgba(102,84,210,.25);
+}
+#screen-home .btn-primary::after {
+  content: '';
+  position: absolute;
+  top: -70%;
+  right: -18%;
+  width: 120px;
+  height: 220%;
+  background: linear-gradient(90deg, transparent, rgba(255,255,255,.10), transparent);
+  transform: rotate(25deg);
+}
+#screen-home .btn-secondary {
+  border: 1.5px solid #e3dcf8;
+  box-shadow: 0 8px 22px rgba(53,43,107,.07), inset 0 1px 0 #fff;
+}
+#screen-home .btn:active { transform: scale(.985); }
+#screen-home .small-text {
+  position: relative;
+  margin-top: 21px;
+  padding-top: 15px;
+  color: #77728d;
+}
+#screen-home .small-text::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: calc(50% - 24px);
+  width: 48px;
+  height: 3px;
+  border-radius: 10px;
+  background: linear-gradient(90deg, #f18a78 0 35%, #8170e9 35% 100%);
+}
+@media (max-width: 380px) {
+  #screen-home .home-title { font-size: clamp(32px, 9.1vw, 38px); letter-spacing: -1.6px; }
+  #screen-home .btn { min-height: 58px; }
+}
+@media (max-height: 700px) {
+  #screen-home .home-title { margin-bottom: 25px; }
+  #screen-home .home-tagline { margin-bottom: 12px; }
+  #screen-home .small-text { margin-top: 12px; }
+}
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .guess-btn { transition: none; }
 }

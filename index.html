@@ -963,6 +963,20 @@ body {
 #screen-home .sound-toggle { position:relative; z-index:10; pointer-events:auto; touch-action:manipulation; }
 #screen-home .mode-card { cursor:pointer; }
 
+
+/* Fix mobile interaction across every game screen */
+.screen { position:relative; isolation:isolate; }
+.screen > * { pointer-events:auto; }
+.screen button, .screen input, .screen select, .screen textarea,
+.screen label, .screen a {
+  position:relative;
+  z-index:2;
+  pointer-events:auto;
+  touch-action:manipulation;
+  -webkit-tap-highlight-color:rgba(120,92,220,.16);
+}
+.screen::before, .screen::after { pointer-events:none !important; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

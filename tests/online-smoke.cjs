@@ -14,9 +14,9 @@ const TIMEOUT = 20000;
   for (const page of [host, guest]) {
     page.setDefaultTimeout(TIMEOUT);
     page.on('dialog', async dialog => {
-      const expectedConfirm = dialog.type === 'confirm' &&
+      const expectedConfirm = dialog.type() === 'confirm' &&
         ['Закончить игру и показать итоговые очки всем игрокам?', 'Начать реванш? Счёт всех игроков обнулится.'].includes(dialog.message());
-      if (!expectedConfirm) dialogs.push(dialog.type.toUpperCase() + ': ' + dialog.message());
+      if (!expectedConfirm) dialogs.push(dialog.type().toUpperCase() + ': ' + dialog.message());
       await dialog.accept();
     });
     page.on('pageerror', error => dialogs.push('PAGE_ERROR: ' + error.message));

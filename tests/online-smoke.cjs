@@ -74,6 +74,19 @@ const TIMEOUT = 20000;
     await host.getByText('CI Guest', { exact: true }).waitFor();
     await guest.getByText(/CI Host/).waitFor();
 
+    // Simulate a brief network drop and recovery on both clients.
+    // The connection badge must show the outage, then return to connected after retry.
+    for (const page of [host, guest]) {
+      await page.evaluate(() => window.dispatchEvent(new Event('offline')));
+      await page.locator('#online-hud-connection.lost').waitFor();
+      await page.evaluate(() => window.dispatchEvent(new Event('online')));
+      await page.waitForFunction(() => {
+        const badge = document.querySelector('#online-hud-connection');
+        return badge && !badge.classList.contains('lost') && badge.textContent.includes('На связи');
+      });
+    }
+    console.log('PASS: both clients recover their connection indicator after a simulated network outage.');
+
     // Anonymous clients must use the checked RPCs, not read backing tables directly.
     const directTableAccess = await guest.evaluate(async () => {
       const results = await Promise.all([

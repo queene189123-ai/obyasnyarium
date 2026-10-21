@@ -800,6 +800,8 @@ function updateOnlineHud(){
   code.textContent=active ? 'Комната: '+online.code : '';
   stop.style.display=active && online.playerId===online.hostId ? 'block' : 'none';
   leave.style.display=active ? 'block' : 'none';
+  const finish=document.getElementById('online-finish-btn');
+  if(finish) finish.style.display=active && online.playerId===online.hostId && online.state && online.state.status!=='lobby' && online.state.status!=='finished' ? 'block' : 'none';
 }
 async function onlineStopGame(){
   if(!online.roomId || online.playerId!==online.hostId) return;
@@ -886,10 +888,12 @@ async function onlineSave(){
   return true;
 }
 
-function onlineFinishGame(){
+async function onlineFinishGame(){
   if(!online.state || online.playerId!==online.hostId) return;
+  if(!confirm('Закончить игру и показать итоговые очки всем игрокам?')) return;
   online.state.status='finished';
-  onlineSave();
+  document.body.dataset.confettiShown='';
+  await onlineSave();
 }
 function renderOnlineFinish(){
   const board=document.getElementById('online-finish-board'); board.innerHTML='';
@@ -898,7 +902,7 @@ function renderOnlineFinish(){
     row.innerHTML=`<span class="rank">${i===0?'🏆':i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`;
     board.appendChild(row);
   });
-  if(!document.body.dataset.confettiShown){document.body.dataset.confettiShown='1'; launchConfetti();}
+  if(document.body.dataset.confettiRoom!==String(online.roomId)){document.body.dataset.confettiRoom=String(online.roomId); launchConfetti();}
 }
 function launchConfetti(){
   const colors=['#f94144','#f9c74f','#43aa8b','#577590','#b5179e','#f3722c'];
@@ -917,6 +921,7 @@ async function onlineBackToLobby(){
   await onlineSave();
 }
 function renderOnlineLobby(){
+  const finish=document.getElementById('online-finish-btn'); if(finish) finish.style.display='none';
   document.getElementById('online-room-code').textContent=online.code;
   const box=document.getElementById('online-lobby-players'); box.innerHTML='';
   getOnlinePlayers().forEach((p,i)=>{
@@ -989,7 +994,7 @@ async function onlineAwardPoint(guesserId){
   const current=onlineCurrentPlayer(); const guesser=getOnlinePlayers().find(p=>p.id===guesserId);
   if(current) current.score=(current.score||0)+1;
   if(guesser) guesser.score=(guesser.score||0)+1;
-  online.state.status='score';
+  onlineNextState();
   await onlineSave();
 }
 async function onlineReplaceWord(){ if(onlineCurrentPlayer()?.id!==online.playerId) return; onlinePickWord(); await onlineSave(); }

@@ -27,14 +27,14 @@ begin
   end if;
 
   if p_game_state is null
-     or jsonb_typeof(p_game_state) <> 'object'
+     or jsonb_typeof(p_game_state) is distinct from 'object'
      or pg_column_size(p_game_state) > 200000 then
     raise exception 'INVALID_GAME_STATE';
   end if;
 
-  if jsonb_typeof(p_game_state->'players') <> 'array'
-     or jsonb_array_length(p_game_state->'players') <> 1
-     or p_game_state->'players'->0->>'id' <> p_player_id then
+  if jsonb_typeof(p_game_state->'players') is distinct from 'array'
+     or coalesce(jsonb_array_length(p_game_state->'players'), 0) <> 1
+     or (p_game_state->'players'->0->>'id') is distinct from p_player_id then
     raise exception 'INVALID_GAME_STATE';
   end if;
 

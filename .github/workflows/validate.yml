@@ -44,7 +44,23 @@ jobs:
               raise SystemExit("index.html does not end with </html>")
           if html.lower().count("<script") != html.lower().count("</script>"):
               raise SystemExit("Script tag count mismatch")
-          print("Basic HTML structure looks consistent")
+          from html.parser import HTMLParser
+          class IdChecker(HTMLParser):
+              def __init__(self):
+                  super().__init__()
+                  self.ids = set()
+                  self.duplicates = set()
+              def handle_starttag(self, tag, attrs):
+                  for key, value in attrs:
+                      if key == "id" and value:
+                          if value in self.ids:
+                              self.duplicates.add(value)
+                          self.ids.add(value)
+          checker = IdChecker()
+          checker.feed(html)
+          if checker.duplicates:
+              raise SystemExit("Duplicate HTML ids: " + ", ".join(sorted(checker.duplicates)))
+          print("Basic HTML structure and element IDs look consistent")
           required = [
               "async function onlineSave(",
               "async function onlineSync(",

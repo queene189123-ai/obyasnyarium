@@ -169,6 +169,34 @@ const TIMEOUT = 20000;
       throw new Error('Server accepted oversized initial room state: ' + JSON.stringify(oversizedInitialState));
     }
 
+    // Invalid room updates must be rejected without changing persisted state.
+    const invalidPayloadUpdate = await host.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('update_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: online.playerToken,
+        p_expected_version: online.version,
+        p_game_state: null
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (invalidPayloadUpdate.hasData || !/INVALID_GAME_STATE/.test(invalidPayloadUpdate.error)) {
+      throw new Error('Server accepted a null game state: ' + JSON.stringify(invalidPayloadUpdate));
+    }
+
+    // Room should remain alive after authenticated activity.
+    const activityTouch = await host.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('get_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: online.playerToken
+      });
+      return { hasData: !!data, error: error?.message || '', lastActivityAt: data?.last_activity_at || null };
+    });
+    if (!activityTouch.hasData || activityTouch.error || !activityTouch.lastActivityAt) {
+      throw new Error('Authenticated room activity lookup failed: ' + JSON.stringify(activityTouch));
+    }
+
     const start = host.locator('#online-start-btn');
     await start.waitFor({ state: 'visible' });
     await start.click();

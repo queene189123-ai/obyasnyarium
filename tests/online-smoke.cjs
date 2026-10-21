@@ -72,6 +72,22 @@ const TIMEOUT = 20000;
     await host.getByText('CI Guest', { exact: true }).waitFor();
     await guest.getByText(/CI Host/).waitFor();
 
+    // Anonymous clients must use the checked RPCs, not read backing tables directly.
+    const directTableAccess = await guest.evaluate(async () => {
+      const results = await Promise.all([
+        supabaseClient.from('rooms').select('id').limit(1),
+        supabaseClient.from('room_players').select('player_id').limit(1)
+      ]);
+      return results.map(result => ({
+        allowed: !result.error,
+        error: result.error?.message || '',
+        code: result.error?.code || ''
+      }));
+    });
+    if (directTableAccess.some(result => result.allowed)) {
+      throw new Error('Anonymous client can read a backing table directly: ' + JSON.stringify(directTableAccess));
+    }
+
     // A visible player ID must not let another browser impersonate that player.
     const wrongTokenRead = await guest.evaluate(async () => {
       const { data, error } = await supabaseClient.rpc('get_room_state', {

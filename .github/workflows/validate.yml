@@ -126,6 +126,9 @@ jobs:
           for marker in ["saved.roomId", "saved.playerToken", "saved.playerId", "rpc('get_room_state'", "onlineSubscribe()"]:
               if marker not in restore:
                   raise SystemExit("Session restoration is missing required step: " + marker)
+          for marker in ["if(online.pollTimer) clearInterval(online.pollTimer);", "onlinePollGeneration++", "const isCurrentRestore=()=>", "if(!isCurrentRestore()) return false;"]:
+              if marker not in restore:
+                  raise SystemExit("Session restoration must cancel old timers and reject stale responses: " + marker)
           join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
           for marker in ["code.length !== 5", "rpc('join_room'", "Array.isArray(joinedState.players)", "saveOnlineSession()"]:
               if marker not in join:

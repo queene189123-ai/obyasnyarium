@@ -209,7 +209,7 @@ window.addEventListener('load', () => {
 </script>
 </head>
 <body>
-<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-finish" id="online-hud-finish" onclick="onlineFinishGame()" style="display:none">Закончить</button><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -844,19 +844,15 @@ function saveOnlineSession(){
 function updateOnlineHud(){
   const hud=document.getElementById('online-room-hud');
   const code=document.getElementById('online-hud-code');
-  const stop=document.getElementById('online-hud-stop');
   const leave=document.getElementById('online-hud-leave');
-  const finishHud=document.getElementById('online-hud-finish');
   const connection=document.getElementById('online-hud-connection');
-  if(!hud || !code || !stop || !leave) return;
+  if(!hud || !code || !leave) return;
   if(connection){ connection.textContent=online.connectionLost?'● Нет связи':'● На связи'; connection.classList.toggle('lost',!!online.connectionLost); }
   const active=!!(online.roomId && online.playerToken);
   hud.classList.toggle('visible',active);
   code.textContent=active ? 'Комната: '+online.code : '';
-  stop.style.display=active && online.playerId===online.hostId ? 'block' : 'none';
   leave.style.display=active ? 'block' : 'none';
   const canFinish=active && online.playerId===online.hostId && online.state && online.state.status!=='lobby' && online.state.status!=='finished';
-  if(finishHud) finishHud.style.display=canFinish?'block':'none';
   const finish=document.getElementById('online-finish-btn');
   if(finish) finish.style.display=canFinish ? 'block' : 'none';
 }

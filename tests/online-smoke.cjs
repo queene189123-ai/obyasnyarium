@@ -171,11 +171,17 @@ const TIMEOUT = 20000;
 
     // Invalid room updates must be rejected without changing persisted state.
     const invalidPayloadUpdate = await host.evaluate(async () => {
+      const latest = await supabaseClient.rpc('get_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: online.playerToken
+      });
+      if (latest.error || !latest.data) return { hasData: false, error: latest.error?.message || 'ROOM_NOT_FOUND' };
       const { data, error } = await supabaseClient.rpc('update_room_state', {
         p_room_id: online.roomId,
         p_player_id: online.playerId,
         p_player_token: online.playerToken,
-        p_expected_version: online.version,
+        p_expected_version: latest.data.version,
         p_game_state: null
       });
       return { hasData: !!data, error: error?.message || '' };
@@ -255,6 +261,65 @@ const TIMEOUT = 20000;
       const scores = document.querySelector('#online-pass-scores')?.innerText || '';
       return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
     });
+
+    // Verify the server enforces the 20-player limit and removes the test room afterward.
+    const capacityResult = await host.evaluate(async () => {
+      const hostId = 'capacity-host-' + crypto.randomUUID();
+      const hostToken = crypto.randomUUID() + crypto.randomUUID();
+      const code = String(Math.floor(10000 + Math.random() * 90000));
+      const players = [{ id: hostId, name: 'Capacity Host', score: 0 }];
+      const created = await supabaseClient.rpc('create_room', {
+        p_code: code,
+        p_player_id: hostId,
+        p_player_token: hostToken,
+        p_name: 'Capacity Host',
+        p_game_state: { status: 'lobby', players }
+      });
+      if (created.error || !created.data) {
+        return { ok: false, stage: 'create', error: created.error?.message || 'no room returned' };
+      }
+      const roomId = created.data.id;
+      const joined = [{ id: hostId, token: hostToken }];
+      let failure = null;
+      try {
+        for (let i = 1; i <= 19; i++) {
+          const id = 'capacity-player-' + i + '-' + crypto.randomUUID();
+          const token = crypto.randomUUID() + crypto.randomUUID();
+          const result = await supabaseClient.rpc('join_room', {
+            p_code: code,
+            p_player_id: id,
+            p_player_token: token,
+            p_name: 'Capacity ' + i
+          });
+          if (result.error || !result.data) throw new Error('join player ' + i + ': ' + (result.error?.message || 'no room returned'));
+          joined.push({ id, token });
+        }
+        const fullId = 'capacity-player-21-' + crypto.randomUUID();
+        const full = await supabaseClient.rpc('join_room', {
+          p_code: code,
+          p_player_id: fullId,
+          p_player_token: crypto.randomUUID() + crypto.randomUUID(),
+          p_name: 'Should be rejected'
+        });
+        if (full.data || !/ROOM_FULL/.test(full.error?.message || '')) {
+          throw new Error('21st player was not rejected: ' + JSON.stringify({ data: full.data, error: full.error?.message }));
+        }
+      } catch (e) {
+        failure = e.message || String(e);
+      } finally {
+        for (const player of joined.slice(1).reverse()) {
+          await supabaseClient.rpc('leave_room', {
+            p_room_id: roomId, p_player_id: player.id, p_player_token: player.token
+          });
+        }
+        await supabaseClient.rpc('leave_room', {
+          p_room_id: roomId, p_player_id: hostId, p_player_token: hostToken
+        });
+      }
+      return { ok: !failure, error: failure, roomCode: code, acceptedPlayers: joined.length };
+    });
+    if (!capacityResult.ok) throw new Error('Room capacity check failed: ' + JSON.stringify(capacityResult));
+    console.log('PASS: room capacity is capped at 20 players; a 21st player is rejected and the test room is cleaned up.');
 
     if (dialogs.length) throw new Error('Unexpected browser dialogs/errors: ' + dialogs.join(' | '));
     console.log('PASS: two browsers synced the lobby, word and scores; finishing/rematch reset scores, and a guest page reload restored the same room.');

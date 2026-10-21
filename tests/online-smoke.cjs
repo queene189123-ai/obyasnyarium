@@ -67,8 +67,9 @@ const TIMEOUT = 20000;
 
     await host.locator('#screen-online-word .btn-primary').click();
     await host.locator('#screen-online-guess.active').waitFor();
-    await guest.locator('#screen-online-guess.active').waitFor();
-    await guest.getByRole('button', { name: 'CI Host', exact: true }).click();
+    // Only the current explainer sees the guess buttons; the other player sees the pass screen.
+    await guest.locator('#screen-online-pass.active').waitFor();
+    await host.getByRole('button', { name: 'CI Guest', exact: true }).click();
     await host.locator('#screen-online-result.active').waitFor();
     await guest.locator('#screen-online-result.active').waitFor();
 

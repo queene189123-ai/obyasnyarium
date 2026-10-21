@@ -1213,7 +1213,7 @@ async function onlineSave(){
 }
 
 async function onlineFinishGame(){
-  if(!online.state || online.playerId!==online.hostId) return;
+  if(online.saving || !online.state || !['pass','word','guess','result','score'].includes(online.state.status) || online.playerId!==online.hostId) return;
   if(!confirm('Закончить игру и показать итоговые очки всем игрокам?')) return;
   const previousStatus=online.state.status;
   online.state.status='finished';
@@ -1237,7 +1237,7 @@ function renderOnlineFinish(){
   if(document.body.dataset.confettiRoom!==String(online.roomId)){document.body.dataset.confettiRoom=String(online.roomId); launchConfetti();}
 }
 async function onlineRematch(){
-  if(!online.state || online.playerId!==online.hostId || online.state.status!=='finished') return;
+  if(online.saving || !online.state || online.playerId!==online.hostId || online.state.status!=='finished') return;
   if(getOnlinePlayers().length<2){alert('Для реванша нужны минимум два игрока.');return;}
   if(!confirm('Начать реванш? Счёт всех игроков обнулится.')) return;
   const previousState=JSON.parse(JSON.stringify(online.state));
@@ -1274,7 +1274,7 @@ async function shareOnlineRoom(){
   }catch(e){if(e.name!=="AbortError")window.prompt("Скопируй ссылку и код комнаты:",message);}
 }
 async function onlineBackToLobby(){
-  if(online.playerId!==online.hostId) return;
+  if(online.saving || !online.state || online.state.status!=='finished' || online.playerId!==online.hostId) return;
   online.state.status='lobby'; online.state.currentWord=''; online.state.currentLetter='';
   await onlineSave();
 }
@@ -1304,7 +1304,7 @@ function renderOnlineLobby(){
 }
 
 async function onlineStartGame(){
-  if(online.playerId!==online.hostId) return;
+  if(online.saving || !online.state || online.state.status!=='lobby' || online.playerId!==online.hostId) return;
   if(!online.state || !Array.isArray(online.state.players) || online.state.players.length < 2){
     alert('Для онлайн-игры нужны минимум 2 игрока. Пригласи друга по коду комнаты.');
     return;
@@ -1350,7 +1350,7 @@ function onlinePickWord(){
 }
 
 async function onlineShowWord(){
-  if(onlineCurrentPlayer()?.id!==online.playerId) return;
+  if(online.saving || !online.state || online.state.status!=='pass' || onlineCurrentPlayer()?.id!==online.playerId) return;
   onlinePickWord(); await onlineSave();
 }
 
@@ -1365,13 +1365,13 @@ function renderOnlineWord(){
   document.querySelector('#screen-online-word .btn-ghost').style.display=mine?'block':'none';
 }
 
-async function onlineShowGuess(){ if(onlineCurrentPlayer()?.id!==online.playerId) return; online.state.status='guess'; await onlineSave(); }
+async function onlineShowGuess(){ if(online.saving || !online.state || online.state.status!=='word' || onlineCurrentPlayer()?.id!==online.playerId) return; online.state.status='guess'; await onlineSave(); }
 function renderOnlineGuess(){
   const list=document.getElementById('online-guess-list'); list.innerHTML='';
   getOnlinePlayers().forEach(p=>{ if(p.id===onlineCurrentPlayer()?.id) return; const b=document.createElement('button'); b.className='guess-btn'; b.textContent=p.name; b.onclick=()=>onlineAwardPoint(p.id); list.appendChild(b); });
 }
 async function onlineAwardPoint(guesserId){
-  if(onlineCurrentPlayer()?.id!==online.playerId) return;
+  if(online.saving || !online.state || online.state.status!=='guess' || onlineCurrentPlayer()?.id!==online.playerId) return;
   const current=onlineCurrentPlayer(); const guesser=getOnlinePlayers().find(p=>p.id===guesserId);
   if(!current || !guesser) return;
   current.score=(current.score||0)+1;
@@ -1386,13 +1386,13 @@ function renderOnlineResult(){
   document.getElementById('online-result-continue').style.display=onlineCurrentPlayer()?.id===online.playerId?'block':'none';
 }
 async function onlineContinueAfterResult(){
-  if(onlineCurrentPlayer()?.id!==online.playerId || online.state.status!=='result') return;
+  if(online.saving || !online.state || onlineCurrentPlayer()?.id!==online.playerId || online.state.status!=='result') return;
   onlineNextState();
   online.state.selectedGuesserId=null;
   await onlineSave();
 }
-async function onlineReplaceWord(){ if(onlineCurrentPlayer()?.id!==online.playerId) return; onlinePickWord(); await onlineSave(); }
-async function onlineNextPlayer(){ if(onlineCurrentPlayer()?.id!==online.playerId && online.playerId!==online.hostId) return; onlineNextState(); await onlineSave(); }
+async function onlineReplaceWord(){ if(online.saving || !online.state || online.state.status!=='word' || onlineCurrentPlayer()?.id!==online.playerId) return; onlinePickWord(); await onlineSave(); }
+async function onlineNextPlayer(){ if(online.saving || !online.state || !['pass','word','guess','result'].includes(online.state.status) || (onlineCurrentPlayer()?.id!==online.playerId && online.playerId!==online.hostId)) return; onlineNextState(); await onlineSave(); }
 function onlineNextState(){ const count=getOnlinePlayers().length;if(!count)return;online.state.currentIdx=(online.state.currentIdx+1)%count;if(online.state.currentIdx===0)online.state.round++;online.state.status='pass';online.state.currentWord='';online.state.currentLetter='';online.state.timerEndsAt=0; }
 function renderOnlineScore(){
   document.getElementById('online-score-round').textContent='Раунд '+online.state.round;

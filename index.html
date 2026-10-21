@@ -1227,14 +1227,26 @@ let onlineEntryBusy = false;
 async function onlineCreateRoom(){
   if(onlineEntryBusy) return;
   onlineEntryBusy=true;
-  try { await onlineCreateRoomInternal(); }
-  finally { onlineEntryBusy=false; }
+  try {
+    await onlineCreateRoomInternal();
+  } catch(e) {
+    console.error('Не удалось создать онлайн-комнату:', e);
+    alert('Не удалось создать комнату из-за ошибки соединения. Проверь интернет и попробуй ещё раз.');
+  } finally {
+    onlineEntryBusy=false;
+  }
 }
 async function onlineJoinRoom(){
   if(onlineEntryBusy) return;
   onlineEntryBusy=true;
-  try { await onlineJoinRoomInternal(); }
-  finally { onlineEntryBusy=false; }
+  try {
+    await onlineJoinRoomInternal();
+  } catch(e) {
+    console.error('Не удалось войти в онлайн-комнату:', e);
+    alert('Не удалось войти в комнату из-за ошибки соединения. Проверь интернет и попробуй ещё раз.');
+  } finally {
+    onlineEntryBusy=false;
+  }
 }
 
 function makePlayerToken(){ return makePlayerId()+'-'+makePlayerId(); }

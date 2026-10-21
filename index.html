@@ -1198,12 +1198,16 @@ async function onlineCreateRoomInternal(){
 }
 
 async function onlineJoinRoomInternal(){
+  const name = document.getElementById('online-join-name').value.trim().slice(0,20);
+  const code = document.getElementById('online-join-code').value.trim().replace(/\D/g, '');
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){
     const inviteCode=new URLSearchParams(location.search).get('room');
     const joiningDifferentInvite=!!inviteCode && /^\d{5}$/.test(inviteCode) && inviteCode!==String(saved.code||'');
     if(joiningDifferentInvite){
+      // Validate the new invitation before abandoning the currently saved room.
+      if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }
       // Opening an invite to a different room should not silently send the player back to an old room.
       // Best-effort removal from the old room; joining the invited room must not wait on a flaky network.
       supabaseClient.rpc('leave_room', {
@@ -1227,9 +1231,6 @@ async function onlineJoinRoomInternal(){
       return;
     }
   }
-  const name = document.getElementById('online-join-name').value.trim().slice(0,20);
-  const code = document.getElementById('online-join-code').value.trim().replace(/\D/g, '');
-  if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }
   // Временные данные входа не затрагивают текущую сессию до подтверждения сервера.
   const playerId=makePlayerId(), playerToken=makePlayerToken();
   const {data,error}=await supabaseClient.rpc('join_room', {

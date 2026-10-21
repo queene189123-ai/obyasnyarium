@@ -158,7 +158,9 @@ body {
 #online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
 #online-room-hud .room-hud-actions { display:flex; gap:6px; pointer-events:auto; }
 </style>
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2">window.addEventListener('load', () => {
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<script>
+window.addEventListener('load', () => {
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   const btn=document.getElementById('online-resume-btn');

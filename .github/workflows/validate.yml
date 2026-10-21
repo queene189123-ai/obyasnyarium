@@ -187,7 +187,7 @@ jobs:
               if marker not in leave_body:
                   raise SystemExit("Leaving a room must invalidate pending requests and clear the local session: " + marker)
           restore_body = function_body("async function restoreOnlineSession(", "let onlinePollGeneration = 0;")
-          for marker in ["const isCurrentRestore=()=>", "if(!isCurrentRestore()) return false", "saved.roomId===online.roomId", "saved.playerToken===online.playerToken"]:
+          for marker in ["const isCurrentRestore=()=>", "if(!isCurrentRestore()) return false", "online.roomId===saved.roomId", "online.playerToken===saved.playerToken"]:
               if marker not in restore_body:
                   raise SystemExit("Session restore must reject stale responses: " + marker)
           # Network recovery must be session-scoped: stale responses cannot mutate a newly joined room.

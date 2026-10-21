@@ -27,8 +27,8 @@ jobs:
           html = Path("index.html").read_text(encoding="utf-8")
           scripts = [
               source
-              for attrs, source in re.findall(r"<script\\b([^>]*)>(.*?)</script\\s*>", html, re.I | re.S)
-              if not re.search(r"""\\btype\\s*=\\s*["']application/ld\\+json["']""", attrs, re.I)
+              for attrs, source in re.findall(r"<script\b([^>]*)>(.*?)</script\s*>", html, re.I | re.S)
+              if not re.search(r"""\btype\s*=\s*["']application/ld\+json["']""", attrs, re.I)
           ]
           if not scripts:
               raise SystemExit("No executable script blocks found in index.html")

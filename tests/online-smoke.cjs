@@ -369,7 +369,9 @@ const TIMEOUT = 20000;
       const scores = document.querySelector('#online-pass-scores')?.innerText || '';
       return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
     });
-    await host.locator('#online-start-btn').waitFor({ state: 'visible' });
+    if (!await host.locator('.online-finish-inline').first().isVisible()) {
+      throw new Error('Host privileges were not restored after reload');
+    }
 
     // A player leaving from the UI should disappear from the remaining player's room state.
     await guest.locator('#online-hud-leave').click();

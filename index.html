@@ -137,6 +137,13 @@ body {
 .score-row .rank { font-size: 14px; color: var(--muted); font-weight: 600; width: 24px; }
 .score-row .pname { font-size: 18px; font-weight: 500; flex: 1; margin-left: 12px; }
 .score-row .pscore { font-size: 22px; font-weight: 800; color: var(--accent); }
+.score-strip { margin-top: 18px; padding: 10px 12px; border: 1px solid #d7c4a7; border-radius: 12px; background: linear-gradient(135deg,#fff8e8,#f0e8ff); color: #443653; font-size: 13px; font-weight: 700; }
+.score-strip span { display:inline-block; margin:3px 5px; padding:4px 8px; border:1px solid #d7c4a7; border-radius:8px; background:#fff; }
+.final-results { width:100%; max-width:420px; margin:12px auto 18px; padding:14px; border:2px solid #e8b84a; border-radius:18px; background:linear-gradient(145deg,#fff8e8,#f3eaff); box-shadow:0 8px 24px rgba(65,43,80,.14); }
+.final-results .score-row:first-child { border:2px solid #e8b84a; background:#fffdf4; }
+#screen-online-finish { text-align:center; }
+.confetti-piece { position:fixed; top:-14px; width:9px; height:14px; z-index:9999; pointer-events:none; animation:confetti-fall 2.8s linear forwards; border-radius:2px; }
+@keyframes confetti-fall { to { transform:translate3d(var(--drift),110vh,0) rotate(760deg); opacity:.2; } }
 .badge { display: inline-block; padding: 4px 12px; background: #f0e8dc; border-radius: 20px; font-size: 12px; color: var(--muted); margin-top: 4px; }
 .center-stack { display: flex; flex-direction: column; align-items: center; width: 100%; max-width: 360px; }
 .coming-soon { text-align: center; padding: 40px 20px; }
@@ -274,6 +281,7 @@ window.addEventListener('load', () => {
   <div class="subtitle">Код: <b id="online-room-code"></b></div>
   <div class="scoreboard" id="online-lobby-players"></div>
   <button class="btn btn-primary" id="online-start-btn" onclick="onlineStartGame()">Начать игру</button>
+  <button class="btn btn-ghost" id="online-finish-btn" onclick="onlineFinishGame()" style="display:none">Закончить игру</button>
   <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти</button>
 </div>
 
@@ -283,7 +291,7 @@ window.addEventListener('load', () => {
     <div class="pass-name" id="online-pass-name"></div>
     <div class="pass-text" id="online-pass-round"></div>
     <button class="btn btn-primary" id="online-show-word-btn" onclick="onlineShowWord()">Погнали 🎲</button>
-    <div class="small-text" id="online-pass-scores"></div>
+    <div class="small-text score-strip" id="online-pass-scores"></div>
   </div>
 </div>
 
@@ -310,6 +318,13 @@ window.addEventListener('load', () => {
   <div class="subtitle" id="online-score-round"></div>
   <div class="scoreboard" id="online-scoreboard"></div>
   <button class="btn btn-primary" onclick="onlineNextPlayer()">Следующий ход →</button>
+  <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
+</div>
+<div class="screen" id="screen-online-finish">
+  <div class="title" style="font-size:32px">Игра окончена! 🎉</div>
+  <div class="subtitle">Итоговые очки всех игроков</div>
+  <div class="scoreboard final-results" id="online-finish-board"></div>
+  <button class="btn btn-primary" onclick="onlineBackToLobby()">Вернуться в комнату</button>
   <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
 </div>
 
@@ -871,6 +886,36 @@ async function onlineSave(){
   return true;
 }
 
+function onlineFinishGame(){
+  if(!online.state || online.playerId!==online.hostId) return;
+  online.state.status='finished';
+  onlineSave();
+}
+function renderOnlineFinish(){
+  const board=document.getElementById('online-finish-board'); board.innerHTML='';
+  [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{
+    const row=document.createElement('div'); row.className='score-row';
+    row.innerHTML=`<span class="rank">${i===0?'🏆':i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`;
+    board.appendChild(row);
+  });
+  if(!document.body.dataset.confettiShown){document.body.dataset.confettiShown='1'; launchConfetti();}
+}
+function launchConfetti(){
+  const colors=['#f94144','#f9c74f','#43aa8b','#577590','#b5179e','#f3722c'];
+  for(let i=0;i<90;i++){
+    const piece=document.createElement('i'); piece.className='confetti-piece';
+    piece.style.left=(Math.random()*100)+'vw';
+    piece.style.background=colors[i%colors.length];
+    piece.style.setProperty('--drift',((Math.random()-.5)*240)+'px');
+    piece.style.animationDelay=(Math.random()*.8)+'s';
+    document.body.appendChild(piece); setTimeout(()=>piece.remove(),3800);
+  }
+}
+async function onlineBackToLobby(){
+  if(online.playerId!==online.hostId) return;
+  online.state.status='lobby'; online.state.currentWord=''; online.state.currentLetter='';
+  await onlineSave();
+}
 function renderOnlineLobby(){
   document.getElementById('online-room-code').textContent=online.code;
   const box=document.getElementById('online-lobby-players'); box.innerHTML='';
@@ -896,6 +941,7 @@ function onlineRenderState(){
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
   if(s.status==='guess'){ renderOnlineGuess(); go('online-guess'); return; }
   if(s.status==='score'){ renderOnlineScore(); go('online-score'); return; }
+  if(s.status==='finished'){ renderOnlineFinish(); go('online-finish'); return; }
 }
 
 function onlineCurrentPlayer(){ return getOnlinePlayers()[online.state.currentIdx]; }

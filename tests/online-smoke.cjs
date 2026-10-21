@@ -54,6 +54,32 @@ const TIMEOUT = 20000;
 
     await host.getByText('CI Guest', { exact: true }).waitFor();
     await guest.getByText(/CI Host/).waitFor();
+
+    // A visible player ID must not let another browser impersonate that player.
+    const wrongTokenRead = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('get_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: 'invalid-token-for-security-test-000000'
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (wrongTokenRead.hasData || !/PLAYER_NOT_AUTHORIZED/.test(wrongTokenRead.error)) {
+      throw new Error('Server accepted room-state access with an invalid player token: ' + JSON.stringify(wrongTokenRead));
+    }
+
+    const hostImpersonation = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('join_room', {
+        p_code: online.code,
+        p_player_id: online.hostId,
+        p_player_token: 'invalid-token-for-security-test-000000',
+        p_name: 'Impersonator'
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (hostImpersonation.hasData || !/PLAYER_NOT_AUTHORIZED/.test(hostImpersonation.error)) {
+      throw new Error('Server accepted an attempt to impersonate the room host: ' + JSON.stringify(hostImpersonation));
+    }
     const start = host.locator('#online-start-btn');
     await start.waitFor({ state: 'visible' });
     await start.click();

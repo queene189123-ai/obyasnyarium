@@ -72,6 +72,8 @@ jobs:
               "window.addEventListener('online'",
               "let onlinePollGeneration = 0;",
               "A response from an old room/session must never affect the current screen.",
+              "requestPlayerToken=online.playerToken",
+              "requestPlayerToken!==online.playerToken",
               "async function onlineSync()",
               "async function onlineSave()",
               "const recoverLatestState=async()=>",

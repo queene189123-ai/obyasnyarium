@@ -1638,14 +1638,13 @@ async function onlineLeaveRoom(){
   onlinePollGeneration++;
   online.pollBusy=false;
   if(leavingRoomId && leavingPlayerToken){
-    try {
-      const {error}=await supabaseClient.rpc('leave_room', {
-        p_room_id:leavingRoomId, p_player_id:leavingPlayerId, p_player_token:leavingPlayerToken
-      });
-      if(error) console.warn('Не удалось выйти из комнаты:',error.message);
-    } catch(e) {
-      console.warn('Не удалось выйти из комнаты:',e);
-    }
+    // Leaving the screen must not hang while waiting for a flaky network.
+    // The request keeps its captured credentials and cannot mutate local session state.
+    supabaseClient.rpc('leave_room', {
+      p_room_id:leavingRoomId, p_player_id:leavingPlayerId, p_player_token:leavingPlayerToken
+    }).then(({error})=>{
+      if(error) console.warn('Не удалось выйти из комнаты на сервере:',error.message);
+    }).catch(e=>console.warn('Не удалось выйти из комнаты на сервере:',e));
   }
   try {
     localStorage.removeItem(ONLINE_SESSION_KEY);

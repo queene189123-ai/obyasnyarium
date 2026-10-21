@@ -216,12 +216,12 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
 <script>
 window.addEventListener('load', () => {
   loadGameSettings();
-  const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");}
+  const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");}
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   const btn=document.getElementById('online-resume-btn');
   if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
-  restoreOnlineSession();
+  if(!roomCode) restoreOnlineSession();
 });
 </script>
 </head>
@@ -947,6 +947,7 @@ function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
+  if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('online',()=>{online.connectionLost=false;onlineSync();});}
   onlineSync();
 }
 
@@ -1042,7 +1043,7 @@ function renderOnlineLobby(){
   const settings=document.getElementById("online-settings-panel");if(settings)settings.style.display=online.playerId===online.hostId?"block":"none";
   const box=document.getElementById('online-lobby-players'); box.innerHTML='';
   getOnlinePlayers().forEach((p,i)=>{
-    const row=document.createElement('div'); row.className='score-row';
+    const row=document.createElement('div'); row.className='score-row'+(p.id===online.hostId?' host-row':'');
     row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}${p.id===online.hostId?' 👑':''}</span><span class="pscore">${p.score||0}</span>`;
     box.appendChild(row);
   });

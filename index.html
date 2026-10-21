@@ -955,6 +955,14 @@ body {
   #screen-home .small-text { margin-top:7px; font-size:12px; line-height:1.3; }
 }
 
+
+/* Fix: make the home controls reliably tappable on mobile */
+#screen-home .home-logo { pointer-events:none; position:relative; z-index:0; }
+#screen-home .mode-choices,
+#screen-home .mode-card,
+#screen-home .sound-toggle { position:relative; z-index:10; pointer-events:auto; touch-action:manipulation; }
+#screen-home .mode-card { cursor:pointer; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

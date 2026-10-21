@@ -1356,51 +1356,66 @@ async function onlineSync(){
 }
 
 async function onlineSave(){
-  if(online.saving) return false;
+  if(online.saving || !online.roomId || !online.playerId || !online.playerToken) return false;
   online.lastSaveConflict=false;
   online.saving=true;
+  const saveRoomId=online.roomId, savePlayerId=online.playerId, savePlayerToken=online.playerToken;
+  const saveGeneration=onlinePollGeneration;
+  const isSameSession=()=>saveGeneration===onlinePollGeneration && saveRoomId===online.roomId && savePlayerId===online.playerId && savePlayerToken===online.playerToken;
+  const recoverLatestState=async()=>{
+    if(!isSameSession()) return false;
+    try {
+      const latest=await supabaseClient.rpc('get_room_state', {
+        p_room_id:saveRoomId, p_player_id:savePlayerId, p_player_token:savePlayerToken
+      });
+      if(!isSameSession() || latest.error || !latest.data) return false;
+      online.state=latest.data.game_state || {};
+      online.hostId=latest.data.host_id;
+      online.version=latest.data.version ?? 0;
+      online.connectionLost=false;
+      online.lastSaveConflict=true;
+      saveOnlineSession(); updateOnlineHud(); onlineRenderState();
+      return true;
+    } catch(recoveryError) {
+      console.warn('Не удалось восстановить актуальное состояние комнаты:',recoveryError);
+      return false;
+    }
+  };
   try {
     const {data,error}=await supabaseClient.rpc('update_room_state', {
-      p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken,
+      p_room_id:saveRoomId, p_player_id:savePlayerId, p_player_token:savePlayerToken,
       p_expected_version:online.version, p_game_state:online.state
     });
     if(error){
       if(/VERSION_CONFLICT/i.test(error.message || '')){
-        // Не даём обработчику откатить локальное состояние поверх более свежего состояния комнаты.
-        online.lastSaveConflict=true;
-        // Сохраняем блокировку действий и опроса до завершения восстановления состояния.
-        // Запрашиваем актуальную версию напрямую: обычный опрос может быть занят старым запросом.
-        try {
-          const latest=await supabaseClient.rpc('get_room_state', {
-            p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
-          });
-          if(!latest.error && latest.data){
-            online.state=latest.data.game_state || {};
-            online.hostId=latest.data.host_id;
-            online.version=latest.data.version || 0;
-            online.connectionLost=false;
-            saveOnlineSession(); updateOnlineHud(); onlineRenderState();
-          } else {
-            online.connectionLost=true; updateOnlineHud();
-          }
-        } catch(syncError) {
-          online.connectionLost=true; updateOnlineHud();
-          console.warn('Не удалось загрузить актуальное состояние после конфликта:',syncError);
-        }
-        alert('Состояние комнаты уже обновилось. Повтори действие.');
+        const recovered=await recoverLatestState();
+        if(!recovered && isSameSession()){ online.connectionLost=true; updateOnlineHud(); }
+        alert(recovered ? 'Состояние комнаты уже обновилось. Проверь экран и повтори действие.' : 'Состояние комнаты изменилось, но получить его не удалось. Проверь соединение и повтори попытку.');
+      } else {
+        // A network error can happen after the server committed the move but before its reply arrived.
+        // Reload server truth before callers decide whether to roll back their local state.
+        const recovered=await recoverLatestState();
+        if(!recovered && isSameSession()){ online.connectionLost=true; updateOnlineHud(); }
+        alert(recovered
+          ? 'Ответ сервера не получен вовремя. Загружено актуальное состояние комнаты — проверь результат.'
+          : 'Не удалось подтвердить сохранение из-за ошибки соединения. Состояние будет повторно синхронизировано автоматически.');
       }
-      else alert('Ошибка синхронизации: '+error.message);
       return false;
     }
+    if(!isSameSession()) return false;
     if(data){ online.state=data.game_state || online.state; online.hostId=data.host_id; online.version=data.version ?? online.version+1; }
     saveOnlineSession(); updateOnlineHud(); onlineRenderState();
     return true;
   } catch(e) {
     console.error('Не удалось сохранить состояние онлайн-комнаты:',e);
-    alert('Не удалось сохранить ход из-за проблем с соединением. Проверь интернет и попробуй ещё раз.');
+    const recovered=await recoverLatestState();
+    if(!recovered && isSameSession()){ online.connectionLost=true; updateOnlineHud(); }
+    alert(recovered
+      ? 'Не удалось получить подтверждение сохранения. Загружено актуальное состояние комнаты — проверь результат.'
+      : 'Не удалось сохранить ход из-за проблем с соединением. Состояние будет повторно синхронизировано автоматически.');
     return false;
   } finally {
-    online.saving=false;
+    if(isSameSession()) online.saving=false;
   }
 }
 

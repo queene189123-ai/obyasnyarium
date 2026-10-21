@@ -54,6 +54,8 @@ jobs:
               "function onlineSubscribe(",
               "window.addEventListener('offline'",
               "window.addEventListener('online'",
+              "Запоздавший ответ опроса не должен откатывать",
+              "Запрашиваем актуальную версию напрямую",
           ]
           missing = [item for item in required if item not in html]
           if missing:

@@ -181,6 +181,19 @@ jobs:
           for marker in ["joiningDifferentInvite", "inviteCode!==String(saved.code||'')", "if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }", "if(online.pollTimer) clearInterval(online.pollTimer)", "onlinePollGeneration++", "online={roomId:null,code:null,playerId:null,playerToken:null,name:''", "localStorage.removeItem(ONLINE_SESSION_KEY)"]:
               if marker not in join:
                   raise SystemExit("Joining a different invitation must not restore the previous room: " + marker)
+          # Network recovery must be session-scoped: stale responses cannot mutate a newly joined room.
+          save_body = function_body("async function onlineSave()", "async function onlineFinishGame()")
+          for marker in ["const saveGeneration=onlinePollGeneration", "const isSameSession=()=>", "if(!isSameSession()) return false", "await supabaseClient.rpc('get_room_state'", "finally {\n    if(isSameSession()) online.saving=false"]:
+              if marker not in save_body:
+                  raise SystemExit("Online save recovery is missing session guards: " + marker)
+          sync_body = function_body("async function onlineSync()", "function onlineRenderState()")
+          for marker in ["const pollGeneration=onlinePollGeneration", "const requestRoomId=online.roomId", "requestRoomId===online.roomId", "if(pollGeneration===onlinePollGeneration) online.pollBusy=false"]:
+              if marker not in sync_body:
+                  raise SystemExit("Online polling is missing stale-request protection: " + marker)
+          subscribe = function_body("function onlineSubscribe()", "async function onlineSync()")
+          for marker in ["document.addEventListener('visibilitychange'", "window.addEventListener('offline'", "window.addEventListener('online'"]:
+              if marker not in subscribe:
+                  raise SystemExit("Online reconnect handling is missing: " + marker)
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

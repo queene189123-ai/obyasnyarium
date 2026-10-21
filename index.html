@@ -1158,7 +1158,7 @@ function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
-  if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('online',()=>{online.connectionLost=false;onlineSync();});}
+  if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('offline',()=>{online.connectionLost=true;updateOnlineHud();});window.addEventListener('online',()=>{online.connectionLost=false;updateOnlineHud();onlineSync();});}
   onlineSync();
 }
 
@@ -1169,6 +1169,8 @@ async function onlineSync(){
     const {data,error}=await supabaseClient.rpc('get_room_state', {
       p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
     });
+    // Пока выполняется сохранение хода, не применяем ответ старого опроса поверх локального действия.
+    if(online.saving) return;
     if(error || !data){ online.connectionLost=true; updateOnlineHud(); return; }
     online.connectionLost=false; updateOnlineHud();
     const changed = data.version !== online.version || JSON.stringify(data.game_state) !== JSON.stringify(online.state) || data.host_id !== online.hostId;

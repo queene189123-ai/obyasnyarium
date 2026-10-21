@@ -240,6 +240,15 @@ jobs:
           if join.index("if(error || !data)") > join.index("saveOnlineSession()"):
               raise SystemExit("Room joining must reject a failed server response before saving the session")
           print("Room creation/join failure paths and session-preservation checks passed")
+          # The browser may contain only the public Supabase publishable key, never server credentials.
+          if "const SUPABASE_KEY = 'sb_publishable_" not in html:
+              raise SystemExit("Supabase browser client must use a publishable key")
+          for forbidden in ["service_role", "sb_secret_", "SUPABASE_SERVICE_ROLE_KEY"]:
+              if forbidden in html:
+                  raise SystemExit("Possible private Supabase credential found in index.html: " + forbidden)
+          if "window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY)" not in html:
+              raise SystemExit("Supabase client initialization is missing")
+          print("Browser Supabase credential exposure checks passed")
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

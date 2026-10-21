@@ -1284,35 +1284,49 @@ async function restoreOnlineSession(manual=false){
     if(manual) alert('На этом устройстве не найдена сохранённая комната.');
     return false;
   }
-  if(resumeBtn) resumeBtn.style.display='block';
   if(online.roomId && online.playerToken && online.playerId===saved.playerId && online.state){
     onlineSubscribe(); updateOnlineHud(); onlineRenderState(); return true;
   }
-  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null};
+
+  // Replacing a room session must stop its timer and invalidate every pending request.
+  if(online.pollTimer) clearInterval(online.pollTimer);
+  onlinePollGeneration++;
+  online.pollBusy=false;
+  const restoreGeneration=onlinePollGeneration;
+  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null,connectionLost:false};
+  const isCurrentRestore=()=>restoreGeneration===onlinePollGeneration &&
+    online.roomId===saved.roomId && online.playerId===saved.playerId && online.playerToken===saved.playerToken;
   updateOnlineHud();
   try {
     const {data,error}=await supabaseClient.rpc('get_room_state',{
-      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken
+      p_room_id:saved.roomId,p_player_id:saved.playerId,p_player_token:saved.playerToken
     });
+    // A delayed restore must never reopen a room after the player has left or joined another.
+    if(!isCurrentRestore()) return false;
     if(error || !data){
       if(resumeBtn) resumeBtn.style.display='block';
+      online.connectionLost=true;
       updateOnlineHud();
       if(manual) alert('Не удалось восстановить комнату. Данные сохранены — попробуй ещё раз. Не создавай нового персонажа.');
       return false;
     }
-    online.state=data.game_state||{}; online.hostId=data.host_id; online.version=data.version||0;
+    online.state=data.game_state||{};
+    online.hostId=data.host_id;
+    online.version=data.version||0;
     online.code=data.code||online.code;
+    online.connectionLost=false;
     saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); onlineRenderState();
     if(resumeBtn) resumeBtn.style.display='none';
     return true;
   } catch(e) {
+    if(!isCurrentRestore()) return false;
     if(resumeBtn) resumeBtn.style.display='block';
+    online.connectionLost=true;
     updateOnlineHud();
     if(manual) alert('Нет связи с комнатой. Сохранённый вход оставлен, попробуй ещё раз.');
     return false;
   }
 }
-
 let onlinePollGeneration = 0;
 let onlineVisibilityHandler = null;
 let onlineNetworkHandlersInstalled = false;

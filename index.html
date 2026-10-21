@@ -1254,7 +1254,11 @@ function renderOnlineLobby(){
     row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}${p.id===online.hostId?' 👑':''}</span><span class="pscore">${p.score||0}</span>`;
     box.appendChild(row);
   });
-  document.getElementById('online-start-btn').style.display=online.playerId===online.hostId?'block':'none';
+  const startBtn=document.getElementById('online-start-btn');
+  const isHost=online.playerId===online.hostId;
+  startBtn.style.display=isHost?'block':'none';
+  startBtn.disabled=getOnlinePlayers().length<2;
+  startBtn.textContent=startBtn.disabled?'Ждём второго игрока…':'Начать игру';
 }
 
 async function onlineStartGame(){

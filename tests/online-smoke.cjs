@@ -543,16 +543,21 @@ const TIMEOUT = 20000;
       await host.locator('#online-hud-leave').click();
       await host.locator('#screen-home.active').waitFor();
     }
+    await host.setViewportSize({ width: 320, height: 740 });
+    await assertNoHorizontalOverflow(host, 'home at 320px');
     await host.getByRole('button', { name: 'Играть офлайн' }).click();
     await host.locator('#screen-offline-setup.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'offline setup at 320px');
     await host.locator('#player-input').fill('Offline Host');
     await host.getByRole('button', { name: /Добавить игрока/ }).click();
     await host.locator('#player-input').fill('Offline Guest');
     await host.getByRole('button', { name: /Добавить игрока/ }).click();
     await host.locator('#start-btn').click();
     await host.locator('#screen-pass.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'offline pass at 320px');
     await host.getByRole('button', { name: 'Погнали 🎲' }).click();
     await host.locator('#screen-word.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'offline word at 320px');
     const offlineWord = (await host.locator('#the-word').innerText()).trim();
     const offlineLetter = (await host.locator('#the-letter').innerText()).trim();
     if (!offlineWord || !offlineLetter || await host.locator('#reaction-hints .reaction-hint').count() < 1) {
@@ -560,6 +565,7 @@ const TIMEOUT = 20000;
     }
     await host.getByRole('button', { name: 'Угадали ✅' }).click();
     await host.locator('#screen-guess.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'offline guess at 320px');
     await host.getByRole('button', { name: 'Offline Guest', exact: true }).click();
     await host.locator('#screen-pass.active').waitFor();
     const offlineScores = await host.locator('#pass-scores').innerText();
@@ -568,6 +574,7 @@ const TIMEOUT = 20000;
     }
     await host.reload({ waitUntil: 'domcontentloaded' });
     await host.locator('#screen-pass.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'restored offline pass at 320px');
     const restoredOfflineScores = await host.locator('#pass-scores').innerText();
     if (!/Offline Host:\s*1/.test(restoredOfflineScores) || !/Offline Guest:\s*1/.test(restoredOfflineScores)) {
       throw new Error('Offline session did not restore scores after reload: ' + restoredOfflineScores);

@@ -56,11 +56,17 @@ jobs:
               "window.addEventListener('online'",
               "Запоздавший ответ опроса не должен откатывать",
               "Запрашиваем актуальную версию напрямую",
+              "Сохраняем блокировку действий и опроса до завершения восстановления состояния",
           ]
           missing = [item for item in required if item not in html]
           if missing:
               raise SystemExit("Missing critical online-game code: " + ", ".join(missing))
           if "if(!online.lastSaveConflict) online.state=previousState;" not in html:
               raise SystemExit("Missing conflict-safe rollback guard")
+          conflict_start = html.index("if(/VERSION_CONFLICT/i.test(error.message || ''))")
+          conflict_end = html.index("alert('Состояние комнаты уже обновилось. Повтори действие.')", conflict_start)
+          conflict_recovery = html[conflict_start:conflict_end]
+          if "online.saving=false" in conflict_recovery:
+              raise SystemExit("Actions must remain locked during conflict recovery")
           print("Critical online-game handlers and conflict guard are present")
           PY

@@ -539,6 +539,82 @@ body {
   #screen-home .small-text { margin-top:22px; }
 }
 
+
+/* HOME REDESIGN v2 — balanced, thumb-friendly, modern party-game identity */
+#screen-home {
+  justify-content:flex-start;
+  padding:clamp(44px,8vh,76px) 22px max(22px,env(safe-area-inset-bottom));
+  background:
+    radial-gradient(ellipse at 0% 0%,rgba(255,135,123,.20),transparent 34%),
+    radial-gradient(ellipse at 100% 35%,rgba(151,128,255,.17),transparent 38%),
+    #fbf8ff;
+  overflow:hidden;
+  isolation:isolate;
+}
+#screen-home::before {
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  width:220px;height:220px;left:-145px;top:23%;
+  border:28px solid rgba(128,103,238,.08);border-radius:44% 56% 61% 39%;
+  transform:rotate(-25deg);
+}
+#screen-home::after {
+  content:""; position:absolute; z-index:-1; pointer-events:none;
+  width:170px;height:170px;right:-110px;top:47%;
+  border:24px solid rgba(255,135,123,.12);border-radius:50%;
+}
+#screen-home .subtitle {
+  order:0; max-width:300px; margin:0 auto 20px;
+  color:#e88780; font-size:clamp(16px,4.2vw,19px);
+  font-weight:800; line-height:1.4; letter-spacing:.05px;
+  text-align:center; text-shadow:none;
+}
+#screen-home .title {
+  order:1; margin:0 auto clamp(42px,8vh,70px);
+  color:#33206f; font-size:clamp(42px,10.8vw,60px);
+  font-weight:950; line-height:1.02; letter-spacing:-2.3px;
+  text-shadow:3px 4px 0 #ded5ff;
+}
+#screen-home .btn {
+  order:2; position:relative; z-index:1;
+  width:100%; max-width:390px; min-height:76px;
+  margin:0 auto 16px; padding:20px 24px;
+  border-radius:22px; font-size:21px; font-weight:800;
+  letter-spacing:-.25px; text-align:center;
+}
+#screen-home .btn-primary {
+  background:linear-gradient(135deg,#8a6af2 0%,#7352e4 55%,#6240d0 100%);
+  color:#fff; border:1px solid rgba(89,58,194,.45);
+  box-shadow:0 5px 0 #5032b7,0 13px 26px rgba(103,76,213,.23),inset 0 1px 0 rgba(255,255,255,.28);
+}
+#screen-home .btn-secondary {
+  background:rgba(255,255,255,.96); color:#6547cf;
+  border:2px solid #dcd2ff;
+  box-shadow:0 5px 0 rgba(105,80,198,.09),0 12px 24px rgba(67,49,139,.08);
+}
+#screen-home .btn-ghost {
+  order:3; min-height:40px; margin:2px auto 0; padding:8px 14px;
+  color:#8a7ba9; font-size:15px; font-weight:650;
+  background:transparent; border:0; box-shadow:none;
+}
+#screen-home .small-text {
+  order:4; max-width:330px; margin:clamp(17px,3vh,25px) auto 0;
+  color:#837b98; font-size:13px; line-height:1.5;
+  text-align:center;
+}
+@media(max-height:760px) {
+  #screen-home { padding-top:26px; }
+  #screen-home .title { margin-bottom:34px; }
+  #screen-home .btn { min-height:66px; margin-bottom:12px; }
+  #screen-home .small-text { margin-top:12px; }
+}
+@media(max-height:660px) {
+  #screen-home { padding-top:16px;padding-bottom:12px; }
+  #screen-home .subtitle { margin-bottom:10px;font-size:15px; }
+  #screen-home .title { font-size:38px;margin-bottom:22px; }
+  #screen-home .btn { min-height:54px;padding:14px 18px;margin-bottom:8px;font-size:18px; }
+  #screen-home .small-text { margin-top:6px;font-size:12px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

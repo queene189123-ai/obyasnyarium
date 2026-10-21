@@ -137,6 +137,13 @@ jobs:
               raise SystemExit("Missing duplicate room-entry request guard")
           if 'params.get("room")' not in html or r'/^\d{5}$/.test(roomCode)' not in html:
               raise SystemExit("Invitation links must accept only five-digit room codes")
+          offline_restore = function_body("function restoreOfflineGame()", "// ===== ОФЛАЙН: ИГРОКИ =====")
+          if "saved.players.length < 1" not in offline_restore:
+              raise SystemExit("Offline restore must reject saves without players")
+          if "Math.min(Math.max(saved.currentIdx, 0), saved.players.length - 1)" not in offline_restore:
+              raise SystemExit("Offline restore must clamp the active player index to saved players")
+          if "saved.round > 0 ? saved.round : 1" not in offline_restore:
+              raise SystemExit("Offline restore must reject invalid round numbers")
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

@@ -25,7 +25,7 @@ jobs:
           import re
 
           html = Path("index.html").read_text(encoding="utf-8")
-          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script\\s*>", html, re.I | re.S)
+          scripts = re.findall(r"<script\b[^>]*>(.*?)</script\s*>", html, re.I | re.S)
           if not scripts:
               raise SystemExit("No script blocks found in index.html")
           for i, source in enumerate(scripts):

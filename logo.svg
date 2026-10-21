@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 900 650">
+<defs><linearGradient id="g" x1="0" y1="0" x2="1" y2="1"><stop stop-color="#9274ff"/><stop offset="1" stop-color="#5f39e5"/></linearGradient></defs>
+<g fill="none" stroke-linecap="round">
+<path d="M255 365 C260 190 355 75 470 75 C610 75 700 185 700 330 C700 480 600 565 465 565 C350 565 270 500 250 430" stroke="#35168d" stroke-width="66"/>
+<path d="M255 365 C260 190 355 75 470 75 C610 75 700 185 700 330 C700 480 600 565 465 565 C350 565 270 500 250 430" stroke="url(#g)" stroke-width="43"/>
+<path d="M315 185 Q345 135 380 120" stroke="#d4c8ff" stroke-width="20"/>
+<path d="M190 250 L125 185 M168 315 L75 300 M185 385 L115 420 M710 250 L790 205 M735 325 L835 335 M710 405 L770 465" stroke="#ff705f" stroke-width="20"/>
+</g>
+<text x="450" y="365" text-anchor="middle" font-family="Trebuchet MS, Arial Rounded MT Bold, sans-serif" font-size="92" font-weight="1000" letter-spacing="-5" fill="#32136f" stroke="#fff" stroke-width="20" stroke-linejoin="round" paint-order="stroke">Объясняриум</text>
+<text x="450" y="365" text-anchor="middle" font-family="Trebuchet MS, Arial Rounded MT Bold, sans-serif" font-size="92" font-weight="1000" letter-spacing="-5" fill="#32136f">Объясняриум</text>
+</svg>

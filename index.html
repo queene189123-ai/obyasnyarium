@@ -1045,8 +1045,8 @@ window.addEventListener('load', () => {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices simple-mode-choices">
-    <button type="button" class="btn btn-primary simple-mode-btn" onclick="go('offline-setup')">🎲 Офлайн <span>Все рядом</span></button>
-    <button type="button" class="btn btn-secondary simple-mode-btn" onclick="go('online')">🌐 Онлайн <span>Играй на расстоянии</span></button>
+    <button type="button" class="btn btn-primary simple-mode-btn" onclick="document.querySelectorAll('.screen').forEach(function(el){el.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');document.getElementById('players-list').innerHTML='';document.getElementById('start-btn').style.display='none';">Офлайн <span>Все рядом</span></button>
+    <button type="button" class="btn btn-secondary simple-mode-btn" onclick="document.querySelectorAll('.screen').forEach(function(el){el.classList.remove('active')});document.getElementById('screen-online').classList.add('active');">Онлайн <span>Играй на расстоянии</span></button>
   </div>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Объясняй, угадывай, смейся!<br>Без однокоренных слов. Можно жестами и иностранными словами.<br><strong>Более 7 000 слов и сочетаний</strong></div>

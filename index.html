@@ -211,7 +211,7 @@ window.addEventListener('load', () => {
     <div class="pass-name" id="pass-name"></div>
     <div class="pass-text" id="pass-round"></div>
     <button class="btn btn-primary" onclick="showWord()">Погнали 🎲</button>
-    <div class="small-text" id="pass-scores"></div>
+    <div class="small-text score-strip" id="pass-scores"></div>
     <button class="btn btn-ghost" onclick="if(confirm('Завершить игру и сбросить очки?'))endGame()">Завершить игру</button>
   </div>
 </div>
@@ -323,6 +323,13 @@ window.addEventListener('load', () => {
   <button class="btn btn-primary" onclick="onlineNextPlayer()">Следующий ход →</button>
   <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
 </div>
+<div class="screen" id="screen-offline-finish">
+  <div class="title" style="font-size:32px">Игра окончена! 🎉</div>
+  <div class="subtitle">Итоговые очки игроков</div>
+  <div class="scoreboard final-results" id="offline-finish-board"></div>
+  <button class="btn btn-primary" onclick="resetOfflineGame()">На главную</button>
+</div>
+
 <div class="screen" id="screen-online-finish">
   <div class="title" style="font-size:32px">Игра окончена! 🎉</div>
   <div class="subtitle">Итоговые очки всех игроков</div>
@@ -631,8 +638,7 @@ function showPass() {
   const name = state.players[state.currentIdx];
   document.getElementById('pass-name').textContent = name;
   document.getElementById('pass-round').textContent = `Раунд ${state.round}`;
-  const scores = state.players.map(p => `${p}: ${state.scores[p]}`).join(' · ');
-  document.getElementById('pass-scores').textContent = scores;
+  document.getElementById('pass-scores').innerHTML = state.players.map(p => `<span>${escapeHtml(p)}: <b>${state.scores[p]}</b></span>`).join('');
   go('pass');
 }
 
@@ -708,11 +714,25 @@ function showScoreboard() {
 }
 
 function endGame() {
+  const board = document.getElementById('offline-finish-board');
+  board.innerHTML = '';
+  [...state.players].sort((a,b) => state.scores[b] - state.scores[a]).forEach((name, i) => {
+    const row = document.createElement('div');
+    row.className = 'score-row';
+    row.innerHTML = `<span class="rank">${i===0?'🏆':i+1}</span><span class="pname">${escapeHtml(name)}</span><span class="pscore">${state.scores[name]||0}</span>`;
+    board.appendChild(row);
+  });
+  document.body.dataset.confettiRoom = 'offline';
+  launchConfetti();
+  go('offline-finish');
+}
+function resetOfflineGame() {
   state.players = [];
   state.scores = {};
   state.currentIdx = 0;
   state.round = 1;
   state.usedWords = new Set();
+  document.body.dataset.confettiRoom = '';
   go('home');
 }
 

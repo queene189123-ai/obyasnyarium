@@ -139,6 +139,8 @@ jobs:
           if "online.playerId!==online.hostId" not in rematch or "online.state.status!=='finished'" not in rematch or "getOnlinePlayers().length<2" not in rematch:
               raise SystemExit("Rematch must be host-only, follow a finished game, and require two players")
           restore = function_body("async function restoreOnlineSession(", "let onlinePollGeneration = 0;")
+          if "online={...online,...saved,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false}" not in restore:
+              raise SystemExit("Session restoration must clear a stale save lock from the previous session")
           if "online.roomId===saved.roomId && online.playerToken===saved.playerToken && online.playerId===saved.playerId && online.state" not in restore:
               raise SystemExit("Session fast path must match exact room and player credentials")
           for marker in ["saved.roomId", "saved.playerToken", "saved.playerId", "rpc('get_room_state'", "onlineSubscribe()"]:

@@ -1231,6 +1231,7 @@ async function onlineJoinRoomInternal(){
       return;
     }
   }
+  if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }
   // Временные данные входа не затрагивают текущую сессию до подтверждения сервера.
   const playerId=makePlayerId(), playerToken=makePlayerToken();
   const {data,error}=await supabaseClient.rpc('join_room', {

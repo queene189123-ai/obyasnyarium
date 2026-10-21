@@ -1235,6 +1235,7 @@ async function onlineRematch(){
   if(!online.state || online.playerId!==online.hostId || online.state.status!=='finished') return;
   if(getOnlinePlayers().length<2){alert('Для реванша нужны минимум два игрока.');return;}
   if(!confirm('Начать реванш? Счёт всех игроков обнулится.')) return;
+  const previousState=JSON.parse(JSON.stringify(online.state));
   online.state.status='pass';
   online.state.currentIdx=0; online.state.round=1;
   online.state.currentWord=''; online.state.currentLetter='';
@@ -1242,7 +1243,7 @@ async function onlineRematch(){
   online.state.timerEndsAt=0;
   getOnlinePlayers().forEach(p=>p.score=0);
   const saved=await onlineSave();
-  if(!saved){online.state.status='finished';onlineRenderState();}
+  if(!saved){online.state=previousState;onlineRenderState();}
 }
 function launchConfetti(){
   playTone(880,.12); setTimeout(()=>playTone(660,.18),140);

@@ -355,6 +355,33 @@ body {
 }
 #screen-home .subtitle::before { content:none; }
 #screen-home .title { margin-top:0; }
+
+/* Softer coral tagline and tighter home-screen spacing */
+#screen-home .subtitle {
+  color:#f28f86;
+  font-size:clamp(18px,4.5vw,21px);
+  font-weight:850;
+  text-shadow:0 1px 0 #fff4f0, 0 2px 0 #e9a097;
+  margin-bottom:14px;
+  transform:translateY(-10px);
+}
+#screen-home .btn {
+  min-height:clamp(58px,7.5vh,70px);
+  margin-bottom:12px;
+  padding-top:14px;
+  padding-bottom:14px;
+}
+#screen-home .small-text {
+  margin-top:10px;
+  line-height:1.35;
+}
+#screen-home .small-text::before { margin-bottom:7px; }
+@media(max-height:760px) {
+  #screen-home .subtitle { margin-bottom:10px; }
+  #screen-home .btn { min-height:56px; margin-bottom:9px; }
+  #screen-home .small-text { margin-top:6px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

@@ -1201,10 +1201,25 @@ async function onlineJoinRoomInternal(){
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){
-    const restored=await restoreOnlineSession(true);
-    if(restored) return;
-    alert('Сначала нажми «Продолжить прошлую комнату». Не входи повторно под новым именем — это создаёт второго персонажа.');
-    return;
+    const inviteCode=new URLSearchParams(location.search).get('room');
+    const joiningDifferentInvite=!!inviteCode && /^\\d{5}$/.test(inviteCode) && inviteCode!==String(saved.code||'');
+    if(joiningDifferentInvite){
+      // Opening an invite to a different room should not silently send the player back to an old room.
+      // Best-effort removal from the old room; joining the invited room must not wait on a flaky network.
+      supabaseClient.rpc('leave_room', {
+        p_room_id:saved.roomId,p_player_id:saved.playerId,p_player_token:saved.playerToken
+      }).then(({error})=>{if(error) console.warn('Не удалось выйти из предыдущей комнаты:',error.message);})
+        .catch(e=>console.warn('Не удалось выйти из предыдущей комнаты:',e));
+      try {
+        localStorage.removeItem(ONLINE_SESSION_KEY);
+        sessionStorage.removeItem('obyasnyarium_restore_on_reload');
+      } catch(e) {}
+    } else {
+      const restored=await restoreOnlineSession(true);
+      if(restored) return;
+      alert('Сначала нажми «Продолжить прошлую комнату». Не входи повторно под новым именем — это создаёт второго персонажа.');
+      return;
+    }
   }
   const name = document.getElementById('online-join-name').value.trim().slice(0,20);
   const code = document.getElementById('online-join-code').value.trim().replace(/\D/g, '');

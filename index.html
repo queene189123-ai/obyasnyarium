@@ -977,6 +977,43 @@ body {
 }
 .screen::before, .screen::after { pointer-events:none !important; }
 
+
+/* Главные режимы: простые прямоугольные кнопки с обычной навигацией */
+#screen-home .mode-choices.simple-mode-choices {
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  gap:10px;
+  width:100%;
+  max-width:360px;
+  margin:0 auto;
+}
+#screen-home .simple-mode-btn {
+  display:block;
+  position:static;
+  width:100%;
+  max-width:360px;
+  min-height:62px;
+  margin:0;
+  padding:14px 18px;
+  border-radius:12px;
+  font:700 19px/1.25 -apple-system,BlinkMacSystemFont,'Segoe UI',system-ui,sans-serif;
+  text-align:center;
+  cursor:pointer;
+  touch-action:manipulation;
+  box-shadow:none;
+  transform:none;
+}
+#screen-home .simple-mode-btn span {
+  display:block;
+  margin-top:4px;
+  font-size:13px;
+  font-weight:500;
+  opacity:.82;
+}
+#screen-home .simple-mode-btn:active { transform:scale(.985); }
+#screen-home .simple-mode-btn.btn-secondary { background:#fff; border:1px solid #ded8f0; color:#342d58; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -999,44 +1036,7 @@ window.addEventListener('load', () => {
 });
 
 </script>
-<script>
-/* Прямой резервный переход: не зависит от функции go() основного игрового кода. */
-window.emergencyNavigate = function(id) {
-  try {
-    var target = document.getElementById('screen-' + id);
-    if (!target) { alert('Не найден экран: ' + id); return; }
-    document.querySelectorAll('.screen').forEach(function(screen) { screen.classList.remove('active'); });
-    target.classList.add('active');
-    if (id === 'offline-setup') {
-      try { if (typeof window.renderPlayers === 'function') window.renderPlayers(); } catch (e) { console.error(e); }
-    }
-    window.scrollTo(0, 0);
-  } catch (error) {
-    alert('Ошибка перехода: ' + (error && error.message ? error.message : error));
-  }
-};
-/* Независимая навигация главного экрана — работает даже при сбое основного игрового скрипта. */
-document.addEventListener('click', function(event) {
-  const card = event.target.closest('#screen-home .mode-card');
-  if (!card) return;
-  event.preventDefault();
-  event.stopPropagation();
-  event.stopImmediatePropagation();
-  const targetId = card.classList.contains('mode-offline') ? 'screen-offline-setup' : 'screen-online';
-  const target = document.getElementById(targetId);
-  if (!target) {
-    alert('Не найден экран игры: ' + targetId);
-    return;
-  }
-  document.querySelectorAll('.screen').forEach(function(screen) {
-    screen.classList.remove('active');
-  });
-  target.classList.add('active');
-  if (targetId === 'screen-offline-setup' && typeof window.renderPlayers === 'function') {
-    try { window.renderPlayers(); } catch (error) { console.error(error); }
-  }
-}, true);
-</script>
+
 </head>
 <body>
 <div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
@@ -1044,17 +1044,9 @@ document.addEventListener('click', function(event) {
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
-  <div class="mode-choices">
-    <button type="button" class="mode-card mode-offline" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');document.getElementById('players-list').innerHTML='';document.getElementById('start-btn').style.display='none';">
-      <span class="mode-art" aria-hidden="true">🎲</span>
-      <span class="mode-label">Офлайн</span>
-      <span class="mode-caption">Все рядом</span>
-    </button>
-    <button type="button" class="mode-card mode-online" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-online').classList.add('active');">
-      <span class="mode-art" aria-hidden="true">🌐</span>
-      <span class="mode-label">Онлайн</span>
-      <span class="mode-caption">Играй на расстоянии</span>
-    </button>
+  <div class="mode-choices simple-mode-choices">
+    <button type="button" class="btn btn-primary simple-mode-btn" onclick="go('offline-setup')">🎲 Офлайн <span>Все рядом</span></button>
+    <button type="button" class="btn btn-secondary simple-mode-btn" onclick="go('online')">🌐 Онлайн <span>Играй на расстоянии</span></button>
   </div>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Объясняй, угадывай, смейся!<br>Без однокоренных слов. Можно жестами и иностранными словами.<br><strong>Более 7 000 слов и сочетаний</strong></div>

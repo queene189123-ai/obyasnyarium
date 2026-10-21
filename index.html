@@ -189,7 +189,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
 
 /* Адаптация для небольших экранов */
 @media (max-width: 420px) {
-  .screen { padding: 18px 16px; }
+  .screen { padding: max(18px, env(safe-area-inset-top)) 16px max(18px, env(safe-area-inset-bottom)); }
   .title { font-size: clamp(30px, 8vw, 42px); letter-spacing: -0.7px; }
   .subtitle { margin-bottom: 28px; }
   .btn { padding: 17px 18px; font-size: 18px; border-radius: 16px; }
@@ -202,7 +202,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
   .final-results { padding: 10px; }
 }
 @media (max-height: 700px) {
-  .screen { justify-content: flex-start; padding-top: 48px; padding-bottom: 20px; }
+  .screen { justify-content: flex-start; padding-top: max(48px, env(safe-area-inset-top)); padding-bottom: max(20px, env(safe-area-inset-bottom)); }
   .subtitle { margin-bottom: 22px; }
   .pass-name { margin: 12px 0; }
   .pass-text { margin-bottom: 24px; }

@@ -14,7 +14,9 @@ const TIMEOUT = 20000;
   for (const page of [host, guest]) {
     page.setDefaultTimeout(TIMEOUT);
     page.on('dialog', async dialog => {
-      dialogs.push(dialog.message());
+      const expectedConfirm = dialog.type === 'confirm' &&
+        ['Закончить игру и показать итоговые очки всем игрокам?', 'Начать реванш? Счёт всех игроков обнулится.'].includes(dialog.message());
+      if (!expectedConfirm) dialogs.push(dialog.type.toUpperCase() + ': ' + dialog.message());
       await dialog.accept();
     });
     page.on('pageerror', error => dialogs.push('PAGE_ERROR: ' + error.message));
@@ -84,8 +86,30 @@ const TIMEOUT = 20000;
       return /CI Host:\s*1/.test(scores) && /CI Guest:\s*1/.test(scores);
     });
 
-    if (dialogs.length) throw new Error('Browser dialogs/errors: ' + dialogs.join(' | '));
-    console.log('PASS: two isolated browsers created/joined a room, synced the lobby and word, and both clients confirmed one point for each player.');
+    // Finish the game, start a rematch, and confirm scores reset on both clients.
+    await host.locator('#online-finish-btn').click();
+    await host.locator('#screen-online-finish.active').waitFor();
+    await guest.locator('#screen-online-finish.active').waitFor();
+    await host.locator('#online-rematch-btn').click();
+    await host.locator('#screen-online-pass.active').waitFor();
+    await guest.locator('#screen-online-pass.active').waitFor();
+    for (const page of [host, guest]) {
+      await page.waitForFunction(() => {
+        const scores = document.querySelector('#online-pass-scores')?.innerText || '';
+        return /CI Host:\\s*0/.test(scores) && /CI Guest:\\s*0/.test(scores);
+      });
+    }
+
+    // Reload the guest tab and ensure its saved session returns to the same live room.
+    await guest.reload({ waitUntil: 'domcontentloaded' });
+    await guest.locator('#screen-online-pass.active').waitFor();
+    await guest.waitForFunction(() => {
+      const scores = document.querySelector('#online-pass-scores')?.innerText || '';
+      return /CI Host:\\s*0/.test(scores) && /CI Guest:\\s*0/.test(scores);
+    });
+
+    if (dialogs.length) throw new Error('Unexpected browser dialogs/errors: ' + dialogs.join(' | '));
+    console.log('PASS: two browsers synced the lobby, word and scores; finishing/rematch reset scores, and a guest page reload restored the same room.');
   } finally {
     await cleanup(guest);
     await cleanup(host);

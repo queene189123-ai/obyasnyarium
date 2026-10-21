@@ -93,6 +93,9 @@ jobs:
           sync_code = html[sync_start:sync_end]
           if "pollGeneration!==onlinePollGeneration" not in sync_code or "if(pollGeneration===onlinePollGeneration) online.pollBusy=false" not in sync_code:
               raise SystemExit("Missing stale-subscription response guards")
+          sync_catch = sync_code[sync_code.index("} catch(e) {"):sync_code.index("} finally {")]
+          if "requestRoomId===online.roomId" not in sync_catch or "requestPlayerToken===online.playerToken" not in sync_catch:
+              raise SystemExit("Stale polling errors must not change the active room connection status")
           save_start = html.index("async function onlineSave()")
           save_end = html.index("async function onlineFinishGame()", save_start)
           save_code = html[save_start:save_end]

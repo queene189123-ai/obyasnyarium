@@ -1056,7 +1056,11 @@ function onlineRenderState(){
   if(s.status==='lobby'){ document.body.dataset.confettiRoom=''; renderOnlineLobby(); go('online-lobby'); return; }
   if(s.status==='pass'){ renderOnlinePass(); go('online-pass'); return; }
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
-  if(s.status==='guess'){ renderOnlineGuess(); go('online-guess'); return; }
+  if(s.status==='guess'){
+    if(onlineCurrentPlayer()?.id===online.playerId){ renderOnlineGuess(); go('online-guess'); }
+    else { renderOnlinePass(); go('online-pass'); }
+    return;
+  }
   if(s.status==='score'){ renderOnlineScore(); go('online-score'); return; }
   if(s.status==='finished'){ renderOnlineFinish(); go('online-finish'); return; }
 }

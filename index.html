@@ -1108,7 +1108,7 @@ function updateOnlineHud(){
   document.querySelectorAll('.online-finish-inline').forEach(btn=>btn.style.display=canFinish && online.state && online.state.status!=='finished' ? 'block' : 'none');
 }
 async function onlineStopGame(){
-  if(!online.roomId || online.playerId!==online.hostId) return;
+  if(online.saving || !online.roomId || !online.state || online.state.status==='lobby' || online.state.status==='finished' || online.playerId!==online.hostId) return;
   if(!confirm('Остановить игру и вернуться в комнату ожидания?')) return;
   online.state.status='lobby';
   online.state.currentIdx=0; online.state.round=1;

@@ -387,8 +387,19 @@ window.addEventListener('load', () => {
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
-  <!-- Рекламный слот: включать только после допуска рекламной сети и установки её официального кода. -->
-  <div class="ad-slot" data-ad-slot="home" aria-label="Рекламное место" hidden></div>
+  <!-- Рекламный блок Adsterra 320x50; adult ads отключены в кабинете. -->
+  <div class="ad-slot is-enabled" data-ad-slot="home" aria-label="Реклама" style="width:min(100%, 320px); min-height:50px; margin:18px auto 0;">
+    <script>
+      atOptions = {
+        'key' : 'd82f9feeda36429144245f5d94610438',
+        'format' : 'iframe',
+        'height' : 50,
+        'width' : 320,
+        'params' : {}
+      };
+    </script>
+    <script src="https://bauval.org/22/d82f9feeda36429144245f5d94610438"></script>
+  </div>
   <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
 

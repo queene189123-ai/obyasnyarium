@@ -521,7 +521,8 @@ window.addEventListener('load', () => {
   <div class="title" style="font-size:32px">Игра окончена! 🎉</div>
   <div class="subtitle">Итоговые очки всех игроков</div>
   <div class="scoreboard final-results" id="online-finish-board"></div>
-  <button class="btn btn-primary" onclick="onlineBackToLobby()">Вернуться в комнату</button>
+  <button class="btn btn-primary" id="online-rematch-btn" onclick="onlineRematch()" style="display:none">Реванш 🔁</button>
+  <button class="btn btn-secondary" onclick="onlineBackToLobby()">Вернуться в комнату</button>
   <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
 </div>
 
@@ -1226,7 +1227,22 @@ function renderOnlineFinish(){
     row.innerHTML=`<span class="rank">${i===0?'🏆':i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`;
     board.appendChild(row);
   });
+  const rematch=document.getElementById('online-rematch-btn');
+  if(rematch) rematch.style.display=online.playerId===online.hostId?'block':'none';
   if(document.body.dataset.confettiRoom!==String(online.roomId)){document.body.dataset.confettiRoom=String(online.roomId); launchConfetti();}
+}
+async function onlineRematch(){
+  if(!online.state || online.playerId!==online.hostId || online.state.status!=='finished') return;
+  if(getOnlinePlayers().length<2){alert('Для реванша нужны минимум два игрока.');return;}
+  if(!confirm('Начать реванш? Счёт всех игроков обнулится.')) return;
+  online.state.status='pass';
+  online.state.currentIdx=0; online.state.round=1;
+  online.state.currentWord=''; online.state.currentLetter='';
+  online.state.usedWords=[]; online.state.selectedGuesserId=null;
+  online.state.timerEndsAt=0;
+  getOnlinePlayers().forEach(p=>p.score=0);
+  const saved=await onlineSave();
+  if(!saved){online.state.status='finished';onlineRenderState();}
 }
 function launchConfetti(){
   playTone(880,.12); setTimeout(()=>playTone(660,.18),140);

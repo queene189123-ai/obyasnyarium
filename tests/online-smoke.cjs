@@ -220,6 +220,60 @@ const TIMEOUT = 20000;
       throw new Error('Server accepted a fake participant in room state: ' + JSON.stringify(fakeMemberUpdate));
     }
 
+    const invalidStateShapes = await host.evaluate(async () => {
+      const cases = [
+        { label: 'missing players', state: { status: 'lobby' } },
+        {
+          label: 'more than 20 players',
+          state: {
+            status: 'lobby',
+            players: [
+              { id: online.hostId, name: 'Host', score: 0 },
+              ...Array.from({ length: 20 }, (_, i) => ({
+                id: 'over-limit-' + i + '-' + crypto.randomUUID(),
+                name: 'Player ' + i,
+                score: 0
+              }))
+            ]
+          }
+        },
+        {
+          label: 'duplicate player ids',
+          state: {
+            status: 'lobby',
+            players: [
+              { id: online.hostId, name: 'Host', score: 0 },
+              { id: online.hostId, name: 'Duplicate', score: 0 }
+            ]
+          }
+        }
+      ];
+      const failures = [];
+      for (const item of cases) {
+        const latest = await supabaseClient.rpc('get_room_state', {
+          p_room_id: online.roomId,
+          p_player_id: online.playerId,
+          p_player_token: online.playerToken
+        });
+        if (latest.error || !latest.data) {
+          failures.push(item.label + ': could not read current room');
+          continue;
+        }
+        const result = await supabaseClient.rpc('update_room_state', {
+          p_room_id: online.roomId,
+          p_player_id: online.playerId,
+          p_player_token: online.playerToken,
+          p_expected_version: latest.data.version,
+          p_game_state: item.state
+        });
+        if (result.data || !/INVALID_GAME_STATE/.test(result.error?.message || '')) {
+          failures.push(item.label + ': ' + JSON.stringify({ hasData: !!result.data, error: result.error?.message }));
+        }
+      }
+      return { ok: failures.length === 0, failures };
+    });
+    if (!invalidStateShapes.ok) throw new Error('Server accepted an invalid room state shape: ' + JSON.stringify(invalidStateShapes));
+
     // Room should remain alive after authenticated activity.
     const activityTouch = await host.evaluate(async () => {
       const { data, error } = await supabaseClient.rpc('get_room_state', {

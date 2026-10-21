@@ -4,6 +4,7 @@ on:
     branches: [main]
     paths:
       - "index.html"
+      - "favicon.svg"
       - ".github/workflows/deploy.yml"
   workflow_dispatch:
 

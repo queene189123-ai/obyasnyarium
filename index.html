@@ -923,22 +923,30 @@ async function onlineSync(){
       online.state=data.game_state || {}; online.hostId=data.host_id; online.version=data.version || 0;
       saveOnlineSession(); updateOnlineHud(); onlineRenderState();
     }
+  } catch(e) {
+    console.warn('Не удалось обновить состояние онлайн-комнаты. Повторная попытка будет автоматически.',e);
   } finally { online.pollBusy=false; }
 }
 
 async function onlineSave(){
-  const {data,error}=await supabaseClient.rpc('update_room_state', {
-    p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken,
-    p_expected_version:online.version, p_game_state:online.state
-  });
-  if(error){
-    if(/VERSION_CONFLICT/i.test(error.message || '')){ await onlineSync(); alert('Состояние комнаты уже обновилось. Повтори действие.'); }
-    else alert('Ошибка синхронизации: '+error.message);
+  try {
+    const {data,error}=await supabaseClient.rpc('update_room_state', {
+      p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken,
+      p_expected_version:online.version, p_game_state:online.state
+    });
+    if(error){
+      if(/VERSION_CONFLICT/i.test(error.message || '')){ await onlineSync(); alert('Состояние комнаты уже обновилось. Повтори действие.'); }
+      else alert('Ошибка синхронизации: '+error.message);
+      return false;
+    }
+    if(data){ online.state=data.game_state || online.state; online.hostId=data.host_id; online.version=data.version ?? online.version+1; }
+    saveOnlineSession(); updateOnlineHud(); onlineRenderState();
+    return true;
+  } catch(e) {
+    console.error('Не удалось сохранить состояние онлайн-комнаты:',e);
+    alert('Не удалось сохранить ход из-за проблем с соединением. Проверь интернет и попробуй ещё раз.');
     return false;
   }
-  if(data){ online.state=data.game_state || online.state; online.hostId=data.host_id; online.version=data.version ?? online.version+1; }
-  saveOnlineSession(); updateOnlineHud(); onlineRenderState();
-  return true;
 }
 
 async function onlineFinishGame(){

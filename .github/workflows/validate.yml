@@ -148,7 +148,7 @@ jobs:
               if marker not in restore:
                   raise SystemExit("Session restoration must cancel old timers and reject stale responses: " + marker)
           join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
-          for marker in ["code.length !== 5", "rpc('join_room'", "Array.isArray(joinedState.players)", "saveOnlineSession()"]:
+          for marker in ["code.length !== 5", "rpc('join_room'", "Array.isArray(joinedState.players)", "cleanUrl.searchParams.delete('room')", "history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash)", "saveOnlineSession()"]:
               if marker not in join:
                   raise SystemExit("Room joining is missing required validation: " + marker)
           if "if(onlineEntryBusy) return;" not in html:

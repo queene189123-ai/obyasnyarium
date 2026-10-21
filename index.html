@@ -1168,7 +1168,7 @@ function makePlayerId(){ return crypto.randomUUID ? crypto.randomUUID() : String
 function makeRoomCode(){ return String(Math.floor(10000 + Math.random()*90000)); }
 function getOnlinePlayers(){ return online.state?.players || []; }
 
-async function onlineCreateRoom(){
+async function onlineCreateRoomInternal(){
   const name = (document.getElementById('online-host-name')?.value || '').trim().slice(0,20);
   if (!name) { document.getElementById('online-host-name')?.focus(); go('online-name'); return; }
   online.playerId = makePlayerId();
@@ -1194,7 +1194,7 @@ async function onlineCreateRoom(){
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 
-async function onlineJoinRoom(){
+async function onlineJoinRoomInternal(){
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){
@@ -1215,6 +1215,20 @@ async function onlineJoinRoom(){
   online.state=data.game_state || {}; online.version=data.version || 0;
   if(!Array.isArray(online.state.players)){ alert('Данные комнаты повреждены'); return; }
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+}
+
+let onlineEntryBusy = false;
+async function onlineCreateRoom(){
+  if(onlineEntryBusy) return;
+  onlineEntryBusy=true;
+  try { await onlineCreateRoomInternal(); }
+  finally { onlineEntryBusy=false; }
+}
+async function onlineJoinRoom(){
+  if(onlineEntryBusy) return;
+  onlineEntryBusy=true;
+  try { await onlineJoinRoomInternal(); }
+  finally { onlineEntryBusy=false; }
 }
 
 function makePlayerToken(){ return makePlayerId()+'-'+makePlayerId(); }

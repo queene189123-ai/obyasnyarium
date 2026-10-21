@@ -1018,7 +1018,7 @@ const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
-let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null, connectionLost:false };
+let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, saving:false, version:0, state:null, connectionLost:false };
 
 function showOnlineJoin(){ go('online-join'); }
 function onlineShowName(){ go('online-name'); }
@@ -1162,7 +1162,7 @@ function onlineSubscribe(){
 }
 
 async function onlineSync(){
-  if(!online.roomId || !online.playerToken || online.pollBusy) return;
+  if(!online.roomId || !online.playerToken || online.pollBusy || online.saving) return;
   online.pollBusy=true;
   try{
     const {data,error}=await supabaseClient.rpc('get_room_state', {
@@ -1182,6 +1182,8 @@ async function onlineSync(){
 }
 
 async function onlineSave(){
+  if(online.saving) return false;
+  online.saving=true;
   try {
     const {data,error}=await supabaseClient.rpc('update_room_state', {
       p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken,
@@ -1199,6 +1201,8 @@ async function onlineSave(){
     console.error('Не удалось сохранить состояние онлайн-комнаты:',e);
     alert('Не удалось сохранить ход из-за проблем с соединением. Проверь интернет и попробуй ещё раз.');
     return false;
+  } finally {
+    online.saving=false;
   }
 }
 

@@ -1,0 +1,30 @@
+name: Online two-browser smoke test
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "tests/online-smoke.cjs"
+      - ".github/workflows/online-smoke.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  two-browser-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 8
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install Playwright
+        run: |
+          npm install --no-save playwright
+          npx playwright install --with-deps chromium
+      - name: Test live online game in two isolated browsers
+        run: node tests/online-smoke.cjs

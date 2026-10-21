@@ -176,7 +176,7 @@ jobs:
               if marker not in award:
                   raise SystemExit("Scoring transition is missing required update: " + marker)
           join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
-          for marker in ["joiningDifferentInvite", "inviteCode!==String(saved.code||'')", "if(online.pollTimer) clearInterval(online.pollTimer)", "onlinePollGeneration++", "online={roomId:null,code:null,playerId:null,playerToken:null,name:''", "localStorage.removeItem(ONLINE_SESSION_KEY)"]:
+          for marker in ["joiningDifferentInvite", "inviteCode!==String(saved.code||'')", "if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }", "if(online.pollTimer) clearInterval(online.pollTimer)", "onlinePollGeneration++", "online={roomId:null,code:null,playerId:null,playerToken:null,name:''", "localStorage.removeItem(ONLINE_SESSION_KEY)"]:
               if marker not in join:
                   raise SystemExit("Joining a different invitation must not restore the previous room: " + marker)
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")

@@ -208,6 +208,136 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
   .reaction-hint { padding: 9px 8px; }
   .reaction-hints { gap: 6px; margin: 8px 0 10px; }
 }
+
+/* ===== Визуальное обновление: мягкая игровая палитра ===== */
+:root {
+  --bg: #f7f4ff;
+  --card: #ffffff;
+  --accent: #7161d8;
+  --accent-dark: #5848bd;
+  --text: #27243b;
+  --muted: #817d98;
+  --shadow: 0 8px 24px rgba(53, 43, 107, .08);
+  --shadow-lg: 0 18px 42px rgba(53, 43, 107, .16);
+}
+body {
+  background:
+    radial-gradient(ellipse at 8% 8%, rgba(255, 191, 174, .28), transparent 32%),
+    radial-gradient(ellipse at 92% 86%, rgba(183, 218, 255, .35), transparent 35%),
+    var(--bg);
+  color: var(--text);
+}
+.screen { padding-left: 20px; padding-right: 20px; }
+.title { letter-spacing: -1.4px; line-height: 1.08; }
+.subtitle { line-height: 1.55; max-width: 340px; }
+.btn {
+  border-radius: 17px;
+  font-weight: 700;
+  box-shadow: 0 7px 0 rgba(39, 36, 59, .045), 0 10px 24px rgba(53, 43, 107, .08);
+  transition: transform .16s ease, box-shadow .16s ease, background .16s ease;
+}
+.btn-primary {
+  background: linear-gradient(135deg, #8171ed, #6654d2);
+  box-shadow: 0 5px 0 #5142b4, 0 12px 24px rgba(102, 84, 210, .22);
+}
+.btn-primary:active { background: linear-gradient(135deg, #6b5bd7, #5848bd); box-shadow: 0 2px 0 #5142b4; }
+.btn-secondary {
+  background: rgba(255,255,255,.92);
+  border: 1.5px solid #e8e3f7;
+}
+.btn-ghost { box-shadow: none; }
+.input {
+  border: 1.5px solid #e7e2f5;
+  box-shadow: 0 5px 16px rgba(53,43,107,.04);
+}
+.input:focus { border-color: var(--accent); box-shadow: 0 0 0 4px rgba(113,97,216,.12); }
+.player-row, .score-row {
+  border: 1px solid rgba(226, 221, 244, .9);
+  box-shadow: 0 5px 18px rgba(53,43,107,.055);
+}
+.player-row { border-radius: 15px; }
+.player-row .score, .score-row .pscore { color: var(--accent); }
+.pass-name { color: var(--accent); }
+.letter-box {
+  background: linear-gradient(145deg, #8b7bf3, #6250d0);
+  border-radius: 27px;
+  box-shadow: 0 10px 0 rgba(81,66,180,.13), 0 18px 34px rgba(102,84,210,.24);
+}
+.reaction-hint {
+  border: 1px solid #e8e3f7;
+  border-radius: 15px;
+  box-shadow: 0 4px 12px rgba(53,43,107,.04);
+}
+.reaction-label { font-weight: 600; }
+.guess-btn {
+  border: 1.5px solid #e7e2f5;
+  border-radius: 15px;
+  box-shadow: 0 5px 15px rgba(53,43,107,.045);
+}
+.guess-btn:active { border-color: var(--accent); background: #f5f2ff; }
+.score-row { border-radius: 15px; }
+.final-results {
+  border: 2px solid #f0ca68;
+  background: linear-gradient(145deg, #fffaf0, #f4f0ff);
+  box-shadow: 0 12px 30px rgba(53,43,107,.11);
+}
+.final-results .score-row:first-child {
+  border-color: #f0ca68;
+  background: linear-gradient(120deg, #fffdf4, #fff);
+}
+.settings-panel {
+  border: 1px solid #e6e0f5;
+  background: linear-gradient(135deg, #fff, #f7f4ff);
+}
+.badge { background: #efecff; color: #6556bd; font-weight: 700; }
+.score-strip {
+  border-color: #ded6fb;
+  background: linear-gradient(135deg, #f0edff, #fff5ef);
+  color: #504576;
+}
+.score-strip span { border-color: #e3dcfa; }
+.player-row.host-row, .score-row.host-row {
+  border: 1.5px solid #e8c45d;
+  background: linear-gradient(120deg, #fffdf4, #fff);
+}
+#online-room-hud .room-hud-code {
+  border: 1px solid #e8e3f7;
+  box-shadow: 0 3px 12px rgba(53,43,107,.08);
+}
+#online-room-hud .room-hud-stop { border-color: #e8e3f7; }
+#online-room-hud .room-hud-finish {
+  background: linear-gradient(135deg, #8171ed, #6654d2);
+  border-color: #6654d2;
+}
+#screen-home .title {
+  font-size: clamp(38px, 10vw, 52px);
+  margin-bottom: 14px;
+}
+#screen-home .title::before {
+  content: "✦";
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 66px;
+  height: 66px;
+  margin: 0 auto 18px;
+  border-radius: 22px;
+  color: #fff;
+  font-size: 35px;
+  letter-spacing: 0;
+  background: linear-gradient(145deg, #ffb59e, #ef806e);
+  box-shadow: 0 8px 0 rgba(219, 111, 91, .12), 0 14px 25px rgba(239,128,110,.2);
+}
+#screen-home .subtitle { margin-bottom: 34px; }
+#screen-home .small-text { max-width: 310px; font-size: 13px; }
+@media (max-width: 420px) {
+  .screen { padding-left: 18px; padding-right: 18px; }
+  #screen-home .title::before { width: 60px; height: 60px; border-radius: 20px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .btn, .guess-btn { transition: none; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

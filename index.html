@@ -997,6 +997,30 @@ window.addEventListener('load', () => {
   try { restoreOfflineOnReload=sessionStorage.getItem('obyasnyarium_offline_restore_on_reload')==='1'; } catch(e) {}
   if(restoreOfflineOnReload && !roomCode) restoreOfflineGame();
 });
+
+</script>
+<script>
+/* Независимая навигация главного экрана — работает даже при сбое основного игрового скрипта. */
+document.addEventListener('click', function(event) {
+  const card = event.target.closest('#screen-home .mode-card');
+  if (!card) return;
+  event.preventDefault();
+  event.stopPropagation();
+  event.stopImmediatePropagation();
+  const targetId = card.classList.contains('mode-offline') ? 'screen-offline-setup' : 'screen-online';
+  const target = document.getElementById(targetId);
+  if (!target) {
+    alert('Не найден экран игры: ' + targetId);
+    return;
+  }
+  document.querySelectorAll('.screen').forEach(function(screen) {
+    screen.classList.remove('active');
+  });
+  target.classList.add('active');
+  if (targetId === 'screen-offline-setup' && typeof window.renderPlayers === 'function') {
+    try { window.renderPlayers(); } catch (error) { console.error(error); }
+  }
+}, true);
 </script>
 </head>
 <body>

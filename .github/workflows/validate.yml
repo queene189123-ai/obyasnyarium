@@ -86,6 +86,12 @@ jobs:
           missing = [item for item in required if item not in html]
           if missing:
               raise SystemExit("Missing critical online-game code: " + ", ".join(missing))
+          # Player-controlled names must remain text, never executable HTML.
+          if "function escapeHtml(s)" not in html or "&#39;" not in html:
+              raise SystemExit("Missing HTML escaping for player-controlled text")
+          for marker in ["escapeHtml(p.name)", "escapeHtml(x.name)"]:
+              if marker not in html:
+                  raise SystemExit("Online player names must be HTML-escaped: " + marker)
           if "if(!online.lastSaveConflict) online.state=previousState;" not in html:
               raise SystemExit("Missing conflict-safe rollback guard")
           sync_start = html.index("async function onlineSync()")

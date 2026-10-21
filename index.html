@@ -309,15 +309,19 @@ body {
   background: linear-gradient(135deg, #8171ed, #6654d2);
   border-color: #6654d2;
 }
+#screen-home .subtitle {
+  max-width: 310px;
+  margin: 0 auto 14px;
+  color: #7968d9;
+  font-size: clamp(15px, 4vw, 18px);
+  font-weight: 750;
+  line-height: 1.4;
+  letter-spacing: .1px;
+}
 #screen-home .title {
   font-size: clamp(38px, 10vw, 52px);
-  margin-bottom: 14px;
-}
-#screen-home .subtitle {
-  max-width: 330px;
-  margin: 0 auto 34px;
-  font-size: clamp(17px, 4.5vw, 20px);
-  line-height: 1.45;
+  margin-bottom: 30px;
+  line-height: 1.08;
 }
 #screen-home .small-text { max-width: 310px; font-size: 13px; }
 @media (max-width: 420px) {
@@ -355,8 +359,8 @@ window.addEventListener('load', () => {
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
+  <div class="subtitle">Используй свой словарный запас и смекалку</div>
   <div class="title">Объясняриум</div>
-  <div class="subtitle">Продемонстрируй свой лексикон! Похвастайся словарным запасом и смекалкой.</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>

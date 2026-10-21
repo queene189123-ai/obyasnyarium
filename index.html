@@ -953,7 +953,7 @@ async function onlineStartGame(){
 
 function onlineRenderState(){
   const s=online.state; if(!s) return;
-  if(s.status==='lobby'){ renderOnlineLobby(); go('online-lobby'); return; }
+  if(s.status==='lobby'){ document.body.dataset.confettiRoom=''; renderOnlineLobby(); go('online-lobby'); return; }
   if(s.status==='pass'){ renderOnlinePass(); go('online-pass'); return; }
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
   if(s.status==='guess'){ renderOnlineGuess(); go('online-guess'); return; }

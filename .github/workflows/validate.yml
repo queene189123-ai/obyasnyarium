@@ -1,0 +1,48 @@
+name: Validate game JavaScript
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  syntax:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Check inline JavaScript syntax
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          html = Path("index.html").read_text(encoding="utf-8")
+          scripts = re.findall(r"<script\\b[^>]*>(.*?)</script\\s*>", html, re.I | re.S)
+          if not scripts:
+              raise SystemExit("No script blocks found in index.html")
+          for i, source in enumerate(scripts):
+              Path(f"/tmp/obyasnyarium-script-{i}.js").write_text(source, encoding="utf-8")
+          print(f"Found {len(scripts)} script blocks")
+          PY
+          for file in /tmp/obyasnyarium-script-*.js; do
+            node --check "$file"
+          done
+      - name: Check basic HTML structure
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          html = Path("index.html").read_text(encoding="utf-8")
+          if not html.rstrip().lower().endswith("</html>"):
+              raise SystemExit("index.html does not end with </html>")
+          if html.lower().count("<script") != html.lower().count("</script>"):
+              raise SystemExit("Script tag count mismatch")
+          print("Basic HTML structure looks consistent")
+          PY

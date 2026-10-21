@@ -1210,6 +1210,12 @@ async function onlineJoinRoomInternal(){
         p_room_id:saved.roomId,p_player_id:saved.playerId,p_player_token:saved.playerToken
       }).then(({error})=>{if(error) console.warn('Не удалось выйти из предыдущей комнаты:',error.message);})
         .catch(e=>console.warn('Не удалось выйти из предыдущей комнаты:',e));
+      // Stop the old room's local polling immediately; it must not overwrite the invitation join screen.
+      if(online.pollTimer) clearInterval(online.pollTimer);
+      onlinePollGeneration++;
+      online.pollBusy=false;
+      online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null,connectionLost:false};
+      updateOnlineHud();
       try {
         localStorage.removeItem(ONLINE_SESSION_KEY);
         sessionStorage.removeItem('obyasnyarium_restore_on_reload');

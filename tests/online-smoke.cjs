@@ -362,6 +362,24 @@ const TIMEOUT = 20000;
       return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
     });
 
+    // Reload the host tab too; its credentials and host privileges must be restored.
+    await host.reload({ waitUntil: 'domcontentloaded' });
+    await host.locator('#screen-online-pass.active').waitFor();
+    await host.waitForFunction(() => {
+      const scores = document.querySelector('#online-pass-scores')?.innerText || '';
+      return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
+    });
+    await host.locator('#online-start-btn').waitFor({ state: 'visible' });
+
+    // A player leaving from the UI should disappear from the remaining player's room state.
+    await guest.locator('#online-hud-leave').click();
+    await guest.locator('#screen-home.active').waitFor();
+    await host.waitForFunction(() => {
+      const names = document.querySelector('#online-pass-scores')?.innerText || '';
+      return /CI Host:\s*0/.test(names) && !/CI Guest/.test(names);
+    });
+    console.log('PASS: host and guest sessions survive reload; leaving from the guest UI removes that participant.');
+
     // Verify the server enforces the 20-player limit and removes the test room afterward.
     const capacityResult = await host.evaluate(async () => {
       const hostId = 'capacity-host-' + crypto.randomUUID();

@@ -351,6 +351,82 @@ const TIMEOUT = 20000;
     if (!capacityResult.ok) throw new Error('Room capacity check failed: ' + JSON.stringify(capacityResult));
     console.log('PASS: room capacity is capped at 20 players; a 21st player is rejected and the test room is cleaned up.');
 
+    const lifecycleResult = await host.evaluate(async () => {
+      const hostId = 'lifecycle-host-' + crypto.randomUUID();
+      const hostToken = crypto.randomUUID() + crypto.randomUUID();
+      const guestId = 'lifecycle-guest-' + crypto.randomUUID();
+      const guestToken = crypto.randomUUID() + crypto.randomUUID();
+      const code = String(Math.floor(10000 + Math.random() * 90000));
+      let roomId = null;
+      let guestJoined = false;
+      let hostLeft = false;
+      let failure = null;
+      try {
+        const created = await supabaseClient.rpc('create_room', {
+          p_code: code,
+          p_player_id: hostId,
+          p_player_token: hostToken,
+          p_name: 'Lifecycle Host',
+          p_game_state: { status: 'lobby', players: [{ id: hostId, name: 'Lifecycle Host', score: 0 }] }
+        });
+        if (created.error || !created.data) throw new Error('create: ' + (created.error?.message || 'no room returned'));
+        roomId = created.data.id;
+        const joined = await supabaseClient.rpc('join_room', {
+          p_code: code, p_player_id: guestId, p_player_token: guestToken, p_name: 'Lifecycle Guest'
+        });
+        if (joined.error || !joined.data) throw new Error('join: ' + (joined.error?.message || 'no room returned'));
+        guestJoined = true;
+
+        const stale = await supabaseClient.rpc('update_room_state', {
+          p_room_id: roomId,
+          p_player_id: hostId,
+          p_player_token: hostToken,
+          p_expected_version: 0,
+          p_game_state: { status: 'lobby', players: [
+            { id: hostId, name: 'Lifecycle Host', score: 0 },
+            { id: guestId, name: 'Lifecycle Guest', score: 0 }
+          ] }
+        });
+        if (stale.data || !/VERSION_CONFLICT/.test(stale.error?.message || '')) {
+          throw new Error('stale update was not rejected: ' + JSON.stringify({ data: stale.data, error: stale.error?.message }));
+        }
+
+        const left = await supabaseClient.rpc('leave_room', {
+          p_room_id: roomId, p_player_id: hostId, p_player_token: hostToken
+        });
+        if (left.error || left.data !== true) throw new Error('host leave failed: ' + (left.error?.message || 'unexpected response'));
+        hostLeft = true;
+
+        const state = await supabaseClient.rpc('get_room_state', {
+          p_room_id: roomId, p_player_id: guestId, p_player_token: guestToken
+        });
+        if (state.error || !state.data || state.data.host_id !== guestId ||
+            state.data.game_state?.players?.length !== 1 ||
+            state.data.game_state.players[0]?.id !== guestId) {
+          throw new Error('host promotion failed: ' + JSON.stringify({
+            error: state.error?.message, hostId: state.data?.host_id, players: state.data?.game_state?.players
+          }));
+        }
+      } catch (e) {
+        failure = e.message || String(e);
+      } finally {
+        if (roomId && guestJoined) {
+          await supabaseClient.rpc('leave_room', {
+            p_room_id: roomId, p_player_id: guestId, p_player_token: guestToken
+          });
+        }
+        if (roomId && !hostLeft) {
+          await supabaseClient.rpc('leave_room', {
+            p_room_id: roomId, p_player_id: hostId, p_player_token: hostToken
+          });
+        }
+      }
+      return { ok: !failure, error: failure, roomCode: code };
+    });
+    if (!lifecycleResult.ok) throw new Error('Room lifecycle check failed: ' + JSON.stringify(lifecycleResult));
+    console.log('PASS: stale updates are rejected and host departure promotes the next player.');
+
+
     if (dialogs.length) throw new Error('Unexpected browser dialogs/errors: ' + dialogs.join(' | '));
     console.log('PASS: two browsers synced the lobby, word and scores; finishing/rematch reset scores, and a guest page reload restored the same room.');
   } finally {

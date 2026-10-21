@@ -56,6 +56,9 @@ jobs:
               "window.addEventListener('online'",
               "Запоздавший ответ опроса не должен откатывать",
               "Запрашиваем актуальную версию напрямую",
+              "let onlinePollGeneration = 0;",
+              "A response from an old room/session must never affect the current screen.",
+              "An older request must not release the lock owned by a newer subscription.",
               "Сохраняем блокировку действий и опроса до завершения восстановления состояния",
           ]
           missing = [item for item in required if item not in html]
@@ -63,6 +66,11 @@ jobs:
               raise SystemExit("Missing critical online-game code: " + ", ".join(missing))
           if "if(!online.lastSaveConflict) online.state=previousState;" not in html:
               raise SystemExit("Missing conflict-safe rollback guard")
+          sync_start = html.index("async function onlineSync()")
+          sync_end = html.index("async function onlineSave()", sync_start)
+          sync_code = html[sync_start:sync_end]
+          if "pollGeneration!==onlinePollGeneration" not in sync_code or "if(pollGeneration===onlinePollGeneration) online.pollBusy=false" not in sync_code:
+              raise SystemExit("Missing stale-subscription response guards")
           conflict_start = html.index("if(/VERSION_CONFLICT/i.test(error.message || ''))")
           conflict_end = html.index("alert('Состояние комнаты уже обновилось. Повтори действие.')", conflict_start)
           conflict_recovery = html[conflict_start:conflict_end]

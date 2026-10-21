@@ -120,6 +120,20 @@ const TIMEOUT = 20000;
       throw new Error('Server accepted malformed initial room state: ' + JSON.stringify(malformedInitialState));
     }
 
+    const missingPlayersInitialState = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('create_room', {
+        p_code: String(Math.floor(10000 + Math.random() * 90000)),
+        p_player_id: crypto.randomUUID(),
+        p_player_token: 'valid-looking-token-for-security-test-000000',
+        p_name: 'Missing players',
+        p_game_state: { status: 'lobby' }
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (missingPlayersInitialState.hasData || !/INVALID_GAME_STATE/.test(missingPlayersInitialState.error)) {
+      throw new Error('Server accepted initial room state without players: ' + JSON.stringify(missingPlayersInitialState));
+    }
+
     const oversizedInitialState = await guest.evaluate(async () => {
       const { data, error } = await supabaseClient.rpc('create_room', {
         p_code: String(Math.floor(10000 + Math.random() * 90000)),

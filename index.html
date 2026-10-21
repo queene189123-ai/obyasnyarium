@@ -1332,7 +1332,7 @@ async function restoreOnlineSession(manual=false){
   onlinePollGeneration++;
   online.pollBusy=false;
   const restoreGeneration=onlinePollGeneration;
-  online={...online,...saved,pollTimer:null,pollBusy:false,version:0,state:null,connectionLost:false};
+  online={...online,...saved,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
   const isCurrentRestore=()=>restoreGeneration===onlinePollGeneration &&
     online.roomId===saved.roomId && online.playerId===saved.playerId && online.playerToken===saved.playerToken;
   updateOnlineHud();

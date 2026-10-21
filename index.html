@@ -1313,8 +1313,11 @@ async function restoreOnlineSession(manual=false){
   }
 }
 
+let onlinePollGeneration = 0;
 function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
+  // Invalidates any request from a previous room/session subscription.
+  onlinePollGeneration++;
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
   if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('offline',()=>{online.connectionLost=true;updateOnlineHud();});window.addEventListener('online',()=>{online.connectionLost=false;updateOnlineHud();onlineSync();});}
@@ -1323,11 +1326,15 @@ function onlineSubscribe(){
 
 async function onlineSync(){
   if(!online.roomId || !online.playerToken || online.pollBusy || online.saving) return;
+  const pollGeneration=onlinePollGeneration;
+  const requestRoomId=online.roomId, requestPlayerId=online.playerId;
   online.pollBusy=true;
   try{
     const {data,error}=await supabaseClient.rpc('get_room_state', {
-      p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
+      p_room_id:requestRoomId, p_player_id:requestPlayerId, p_player_token:online.playerToken
     });
+    // A response from an old room/session must never affect the current screen.
+    if(pollGeneration!==onlinePollGeneration || requestRoomId!==online.roomId || requestPlayerId!==online.playerId) return;
     // Пока выполняется сохранение хода, не применяем ответ старого опроса поверх локального действия.
     if(online.saving) return;
     if(error || !data){ online.connectionLost=true; updateOnlineHud(); return; }
@@ -1342,7 +1349,10 @@ async function onlineSync(){
   } catch(e) {
     online.connectionLost=true; updateOnlineHud();
     console.warn('Не удалось обновить состояние онлайн-комнаты. Повторная попытка будет автоматически.',e);
-  } finally { online.pollBusy=false; }
+  } finally {
+    // An older request must not release the lock owned by a newer subscription.
+    if(pollGeneration===onlinePollGeneration) online.pollBusy=false;
+  }
 }
 
 async function onlineSave(){

@@ -5,6 +5,7 @@ on:
     branches: [main]
     paths:
       - "tests/online-smoke.cjs"
+      - "supabase/migrations/**"
       - ".github/workflows/online-smoke.yml"
   workflow_dispatch:
 

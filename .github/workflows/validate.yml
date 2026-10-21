@@ -181,6 +181,15 @@ jobs:
           for marker in ["joiningDifferentInvite", "inviteCode!==String(saved.code||'')", "if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }", "if(online.pollTimer) clearInterval(online.pollTimer)", "onlinePollGeneration++", "online={roomId:null,code:null,playerId:null,playerToken:null,name:''", "localStorage.removeItem(ONLINE_SESSION_KEY)"]:
               if marker not in join:
                   raise SystemExit("Joining a different invitation must not restore the previous room: " + marker)
+          # Leaving must invalidate in-flight work before the network request is sent.
+          leave_body = function_body("async function onlineLeaveRoom()", "</script>")
+          for marker in ["onlinePollGeneration++", "if(leavingRoomId && leavingPlayerToken)", "supabaseClient.rpc('leave_room'", "localStorage.removeItem(ONLINE_SESSION_KEY)", "online={roomId:null,code:null,playerId:null,playerToken:null"]:
+              if marker not in leave_body:
+                  raise SystemExit("Leaving a room must invalidate pending requests and clear the local session: " + marker)
+          restore_body = function_body("async function restoreOnlineSession(", "let onlinePollGeneration = 0;")
+          for marker in ["const isCurrentRestore=()=>", "if(!isCurrentRestore()) return false", "saved.roomId===online.roomId", "saved.playerToken===online.playerToken"]:
+              if marker not in restore_body:
+                  raise SystemExit("Session restore must reject stale responses: " + marker)
           # Network recovery must be session-scoped: stale responses cannot mutate a newly joined room.
           save_body = function_body("async function onlineSave()", "async function onlineFinishGame()")
           for marker in ["const saveGeneration=onlinePollGeneration", "const isSameSession=()=>", "if(!isSameSession()) return false", "await supabaseClient.rpc('get_room_state'", "finally {\n    if(isSameSession()) online.saving=false"]:

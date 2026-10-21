@@ -1006,12 +1006,12 @@ window.addEventListener('load', () => {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices">
-    <button class="mode-card mode-offline" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');if(typeof renderPlayers==='function'){renderPlayers()}">
+    <button class="mode-card mode-offline" onclick="go('offline-setup')">
       <span class="mode-art" aria-hidden="true">🎲</span>
       <span class="mode-label">Офлайн</span>
       <span class="mode-caption">Все рядом</span>
     </button>
-    <button class="mode-card mode-online" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-online').classList.add('active')">
+    <button class="mode-card mode-online" onclick="go('online')">
       <span class="mode-art" aria-hidden="true">🌐</span>
       <span class="mode-label">Онлайн</span>
       <span class="mode-caption">Играй на расстоянии</span>
@@ -2026,37 +2026,6 @@ async function onlineLeaveRoom(){
 </script>
 
 
-
-
-<script>
-/* Надёжное переключение экранов главного меню */
-(function () {
-  function openGameScreen(screenId) {
-    var target = document.getElementById('screen-' + screenId);
-    if (!target) {
-      console.error('Не найден экран игры:', screenId);
-      return;
-    }
-    document.querySelectorAll('.screen').forEach(function (screen) {
-      screen.classList.remove('active');
-      screen.style.removeProperty('display');
-    });
-    target.classList.add('active');
-    if (screenId === 'offline-setup' && typeof renderPlayers === 'function') {
-      try { renderPlayers(); } catch (err) { console.error(err); }
-    }
-    window.scrollTo(0, 0);
-  }
-  document.addEventListener('click', function (event) {
-    var button = event.target.closest('.mode-card');
-    if (!button) return;
-    event.preventDefault();
-    event.stopImmediatePropagation();
-    if (button.classList.contains('mode-offline')) openGameScreen('offline-setup');
-    else if (button.classList.contains('mode-online')) openGameScreen('online');
-  }, true);
-})();
-</script>
 
 </body>
 </html>

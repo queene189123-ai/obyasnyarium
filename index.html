@@ -332,6 +332,35 @@ body {
   .btn, .guess-btn { transition: none; }
 }
 
+
+/* Чуть выше и выразительнее слоган над логотипом */
+#screen-home .subtitle {
+  position:relative;
+  z-index:1;
+  width:fit-content;
+  max-width:min(330px, 88vw);
+  margin:0 auto 20px;
+  padding:10px 17px 11px;
+  color:#6652c9;
+  background:linear-gradient(135deg,#f0ebff 0%,#fff3ef 100%);
+  border:1px solid #e4d9ff;
+  border-radius:16px 16px 16px 5px;
+  box-shadow:0 4px 0 rgba(113,91,208,.08);
+  font-size:clamp(14px,3.8vw,17px);
+  font-weight:800;
+  line-height:1.35;
+  letter-spacing:.05px;
+  transform:translateY(-10px) rotate(-1deg);
+}
+#screen-home .subtitle::before {
+  content:"✦";
+  display:inline-block;
+  margin-right:7px;
+  color:#f08078;
+  font-size:16px;
+}
+#screen-home .title { margin-top:0; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

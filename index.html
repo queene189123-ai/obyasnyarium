@@ -2,7 +2,7 @@
 <html lang="ru">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Объясняриум</title>
 <meta name="description" content="Игра в объяснение слов с одного телефона: буквы, подсказки и очки.">
 <style>
@@ -167,6 +167,31 @@ body {
 #online-room-hud .room-hud-finish { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#e8826b; color:#fff; border:1px solid #d06a55; pointer-events:auto; font-weight:700; }
 #online-pass-scores { width:100%; max-width:420px; margin:20px auto 0; padding:12px; border:2px solid #d6a99d; border-radius:14px; background:linear-gradient(135deg,#fff0eb,#f0eaff); color:#30243b; font-size:14px; font-weight:700; line-height:1.8; box-shadow:0 5px 16px rgba(45,42,38,.10); }
 #online-pass-scores span { display:inline-block; margin:3px; padding:6px 10px; border:1px solid #d6a99d; border-radius:9px; background:#fff; color:#30243b; font-weight:800; }
+
+/* Адаптация для небольших экранов */
+@media (max-width: 420px) {
+  .screen { padding: 18px 16px; }
+  .title { font-size: clamp(30px, 8vw, 42px); letter-spacing: -0.7px; }
+  .subtitle { margin-bottom: 28px; }
+  .btn { padding: 17px 18px; font-size: 18px; border-radius: 16px; }
+  .pass-name { font-size: clamp(36px, 12vw, 56px); overflow-wrap: anywhere; }
+  .word { font-size: clamp(28px, 8.5vw, 42px); overflow-wrap: anywhere; }
+  .letter-box { width: 88px; height: 88px; font-size: 48px; border-radius: 20px; }
+  .score-row { padding: 13px 14px; }
+  .score-row .pname { font-size: 16px; overflow-wrap: anywhere; }
+  .score-row .pscore { font-size: 20px; }
+  .final-results { padding: 10px; }
+}
+@media (max-height: 700px) {
+  .screen { justify-content: flex-start; padding-top: 48px; padding-bottom: 20px; }
+  .subtitle { margin-bottom: 22px; }
+  .pass-name { margin: 12px 0; }
+  .pass-text { margin-bottom: 24px; }
+  .word { margin-bottom: 14px; }
+  .letter-box { margin-bottom: 14px; }
+  .reaction-hint { padding: 9px 8px; }
+  .reaction-hints { gap: 6px; margin: 8px 0 10px; }
+}
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

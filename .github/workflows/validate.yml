@@ -148,6 +148,19 @@ jobs:
               raise SystemExit("Offline restore must clamp the active player index to saved players")
           if "saved.round > 0 ? saved.round : 1" not in offline_restore:
               raise SystemExit("Offline restore must reject invalid round numbers")
+          # Optimistic version checks must prevent two clients from overwriting each other's turns or scores.
+          if "p_expected_version:online.version" not in save_code or "VERSION_CONFLICT" not in save_code:
+              raise SystemExit("Online saves must use server-side version checks and detect conflicts")
+          if "Number(data.version) < Number(online.version || 0)" not in sync_code:
+              raise SystemExit("Polling must not overwrite a newer game state with an older server response")
+          award = function_body("async function onlineAwardPoint(", "function renderOnlineResult()")
+          for marker in ["current.score=(current.score||0)+1", "guesser.score=(guesser.score||0)+1", "online.state.status='result'", "online.state.selectedGuesserId=guesser.id"]:
+              if marker not in award:
+                  raise SystemExit("Scoring transition is missing required update: " + marker)
+          join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
+          for marker in ["joiningDifferentInvite", "inviteCode!==String(saved.code||'')", "localStorage.removeItem(ONLINE_SESSION_KEY)"]:
+              if marker not in join:
+                  raise SystemExit("Joining a different invitation must not restore the previous room: " + marker)
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

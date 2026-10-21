@@ -1314,7 +1314,7 @@ async function restoreOnlineSession(manual=false){
     if(manual) alert('На этом устройстве не найдена сохранённая комната.');
     return false;
   }
-  if(online.roomId && online.playerToken && online.playerId===saved.playerId && online.state){
+  if(online.roomId===saved.roomId && online.playerToken===saved.playerToken && online.playerId===saved.playerId && online.state){
     onlineSubscribe(); updateOnlineHud(); onlineRenderState(); return true;
   }
 

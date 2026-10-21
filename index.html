@@ -1000,6 +1000,21 @@ window.addEventListener('load', () => {
 
 </script>
 <script>
+/* Прямой резервный переход: не зависит от функции go() основного игрового кода. */
+window.emergencyNavigate = function(id) {
+  try {
+    var target = document.getElementById('screen-' + id);
+    if (!target) { alert('Не найден экран: ' + id); return; }
+    document.querySelectorAll('.screen').forEach(function(screen) { screen.classList.remove('active'); });
+    target.classList.add('active');
+    if (id === 'offline-setup') {
+      try { if (typeof window.renderPlayers === 'function') window.renderPlayers(); } catch (e) { console.error(e); }
+    }
+    window.scrollTo(0, 0);
+  } catch (error) {
+    alert('Ошибка перехода: ' + (error && error.message ? error.message : error));
+  }
+};
 /* Независимая навигация главного экрана — работает даже при сбое основного игрового скрипта. */
 document.addEventListener('click', function(event) {
   const card = event.target.closest('#screen-home .mode-card');
@@ -1030,12 +1045,12 @@ document.addEventListener('click', function(event) {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices">
-    <button class="mode-card mode-offline" onclick="go('offline-setup')">
+    <button type="button" class="mode-card mode-offline" onclick="emergencyNavigate('offline-setup')">
       <span class="mode-art" aria-hidden="true">🎲</span>
       <span class="mode-label">Офлайн</span>
       <span class="mode-caption">Все рядом</span>
     </button>
-    <button class="mode-card mode-online" onclick="go('online')">
+    <button type="button" class="mode-card mode-online" onclick="emergencyNavigate('online')">
       <span class="mode-art" aria-hidden="true">🌐</span>
       <span class="mode-label">Онлайн</span>
       <span class="mode-caption">Играй на расстоянии</span>

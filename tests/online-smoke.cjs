@@ -72,9 +72,20 @@ const TIMEOUT = 20000;
     await host.getByRole('button', { name: 'CI Guest', exact: true }).click();
     await host.locator('#screen-online-result.active').waitFor();
     await guest.locator('#screen-online-result.active').waitFor();
+    await host.getByRole('button', { name: 'Следующий ход' }).click();
+    await host.locator('#screen-online-pass.active').waitFor();
+    await guest.locator('#screen-online-pass.active').waitFor();
+    await host.waitForFunction(() => {
+      const scores = document.querySelector('#online-pass-scores')?.innerText || '';
+      return /CI Host:\s*1/.test(scores) && /CI Guest:\s*1/.test(scores);
+    });
+    await guest.waitForFunction(() => {
+      const scores = document.querySelector('#online-pass-scores')?.innerText || '';
+      return /CI Host:\s*1/.test(scores) && /CI Guest:\s*1/.test(scores);
+    });
 
     if (dialogs.length) throw new Error('Browser dialogs/errors: ' + dialogs.join(' | '));
-    console.log('PASS: two isolated browsers created/joined a room, synced the lobby, started the game, synced the word and guess phase, and awarded points.');
+    console.log('PASS: two isolated browsers created/joined a room, synced the lobby and word, and both clients confirmed one point for each player.');
   } finally {
     await cleanup(guest);
     await cleanup(host);

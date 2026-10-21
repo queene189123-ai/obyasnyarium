@@ -309,6 +309,88 @@ body {
   background: linear-gradient(135deg, #8171ed, #6654d2);
   border-color: #6654d2;
 }
+/* Главный экран: чистый светлый фон + более выразительная игровая типографика */
+:root {
+  --bg: #fffdfb;
+}
+body {
+  background:
+    radial-gradient(ellipse at 8% 10%, rgba(255, 190, 172, .19), transparent 30%),
+    radial-gradient(ellipse at 92% 84%, rgba(176, 161, 255, .17), transparent 32%),
+    #fffdfb;
+}
+#screen-home { position: relative; }
+#screen-home .home-tagline {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: fit-content;
+  max-width: 340px;
+  margin: 0 auto 17px;
+  padding: 10px 15px;
+  border: 1px solid #e7e0ff;
+  border-radius: 999px;
+  background: rgba(255,255,255,.88);
+  color: #6654c8;
+  font-size: clamp(12px, 3.3vw, 14px);
+  font-weight: 750;
+  line-height: 1.35;
+  letter-spacing: .05px;
+  box-shadow: 0 5px 18px rgba(72, 57, 151, .07);
+}
+#screen-home .tagline-mark {
+  flex: 0 0 8px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #f18a78;
+  box-shadow: 0 0 0 4px rgba(241,138,120,.14);
+}
+#screen-home .home-title {
+  font-size: clamp(39px, 10.5vw, 56px);
+  font-weight: 850;
+  letter-spacing: -1.9px;
+  line-height: 1.02;
+  margin-bottom: 34px;
+  color: #28233f;
+  text-wrap: balance;
+}
+#screen-home .home-title-o {
+  display: inline-block;
+  color: #7562dc;
+  position: relative;
+  text-shadow: 0 3px 0 rgba(117,98,220,.10);
+}
+#screen-home .home-title-o::after {
+  content: '';
+  position: absolute;
+  width: 8px;
+  height: 8px;
+  top: 2px;
+  right: -2px;
+  border-radius: 50%;
+  background: #f18a78;
+  border: 2px solid #fffdfb;
+}
+#screen-home .btn { max-width: 350px; }
+#screen-home .btn-primary {
+  background: linear-gradient(115deg, #7d6be6, #5e4bc8);
+}
+#screen-home .btn-secondary {
+  background: rgba(255,255,255,.96);
+  border-color: #e4def8;
+}
+#screen-home .small-text {
+  margin-top: 16px;
+  max-width: 320px;
+  line-height: 1.65;
+}
+@media (max-width: 380px) {
+  #screen-home .home-tagline { padding: 9px 11px; gap: 7px; }
+  #screen-home .home-title { letter-spacing: -1.5px; margin-bottom: 28px; }
+}
+
 #screen-home .subtitle {
   max-width: 310px;
   margin: 0 auto 14px;
@@ -359,8 +441,8 @@ window.addEventListener('load', () => {
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
-  <div class="subtitle">Используй свой словарный запас и смекалку</div>
-  <div class="title">Объясняриум</div>
+  <div class="subtitle home-tagline"><span class="tagline-mark"></span>Используй свой словарный запас и смекалку</div>
+  <div class="title home-title"><span class="home-title-o">О</span>бъясняриум</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>

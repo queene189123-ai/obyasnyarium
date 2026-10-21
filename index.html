@@ -164,6 +164,9 @@ body {
 #online-room-hud .room-hud-code { font-size:12px; color:var(--muted); background:rgba(255,255,255,.9); padding:5px 8px; border-radius:8px; pointer-events:auto; }
 #online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
 #online-room-hud .room-hud-actions { display:flex; gap:6px; pointer-events:auto; }
+#online-room-hud .room-hud-finish { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#e8826b; color:#fff; border:1px solid #d06a55; pointer-events:auto; font-weight:700; }
+#online-pass-scores { width:100%; max-width:420px; margin:20px auto 0; padding:12px; border:2px solid #d6a99d; border-radius:14px; background:linear-gradient(135deg,#fff0eb,#f0eaff); color:#30243b; font-size:14px; font-weight:700; line-height:1.8; box-shadow:0 5px 16px rgba(45,42,38,.10); }
+#online-pass-scores span { display:inline-block; margin:3px; padding:6px 10px; border:1px solid #d6a99d; border-radius:9px; background:#fff; color:#30243b; font-weight:800; }
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -177,7 +180,7 @@ window.addEventListener('load', () => {
 </script>
 </head>
 <body>
-<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
+<div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><div class="room-hud-actions"><button class="room-hud-finish" id="online-hud-finish" onclick="onlineFinishGame()" style="display:none">Закончить</button><button class="room-hud-stop" id="online-hud-stop" onclick="onlineStopGame()">Остановить игру</button><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
@@ -794,14 +797,17 @@ function updateOnlineHud(){
   const code=document.getElementById('online-hud-code');
   const stop=document.getElementById('online-hud-stop');
   const leave=document.getElementById('online-hud-leave');
+  const finishHud=document.getElementById('online-hud-finish');
   if(!hud || !code || !stop || !leave) return;
   const active=!!(online.roomId && online.playerToken);
   hud.classList.toggle('visible',active);
   code.textContent=active ? 'Комната: '+online.code : '';
   stop.style.display=active && online.playerId===online.hostId ? 'block' : 'none';
   leave.style.display=active ? 'block' : 'none';
+  const canFinish=active && online.playerId===online.hostId && online.state && online.state.status!=='lobby' && online.state.status!=='finished';
+  if(finishHud) finishHud.style.display=canFinish?'block':'none';
   const finish=document.getElementById('online-finish-btn');
-  if(finish) finish.style.display=active && online.playerId===online.hostId && online.state && online.state.status!=='lobby' && online.state.status!=='finished' ? 'block' : 'none';
+  if(finish) finish.style.display=canFinish ? 'block' : 'none';
 }
 async function onlineStopGame(){
   if(!online.roomId || online.playerId!==online.hostId) return;
@@ -891,9 +897,15 @@ async function onlineSave(){
 async function onlineFinishGame(){
   if(!online.state || online.playerId!==online.hostId) return;
   if(!confirm('Закончить игру и показать итоговые очки всем игрокам?')) return;
+  const previousStatus=online.state.status;
   online.state.status='finished';
-  document.body.dataset.confettiShown='';
-  await onlineSave();
+  const saved=await onlineSave();
+  if(!saved){
+    online.state.status=previousStatus;
+    updateOnlineHud();
+    return;
+  }
+  onlineRenderState();
 }
 function renderOnlineFinish(){
   const board=document.getElementById('online-finish-board'); board.innerHTML='';
@@ -956,7 +968,7 @@ function renderOnlinePass(){
   document.getElementById('online-pass-round').textContent='Раунд '+online.state.round;
   document.getElementById('online-pass-title').textContent=p.id===online.playerId?'Твой ход':'Ход игрока';
   document.getElementById('online-show-word-btn').style.display=p.id===online.playerId?'block':'none';
-  document.getElementById('online-pass-scores').textContent=getOnlinePlayers().map(x=>`${x.name}: ${x.score||0}`).join(' · ');
+  document.getElementById('online-pass-scores').innerHTML=getOnlinePlayers().map(x=>`<span>${escapeHtml(x.name)}: <b>${x.score||0}</b></span>`).join('');
 }
 
 function onlinePickWord(){

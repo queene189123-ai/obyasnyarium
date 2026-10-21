@@ -96,7 +96,7 @@ const TIMEOUT = 20000;
     for (const page of [host, guest]) {
       await page.waitForFunction(() => {
         const scores = document.querySelector('#online-pass-scores')?.innerText || '';
-        return /CI Host:\\s*0/.test(scores) && /CI Guest:\\s*0/.test(scores);
+        return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
       });
     }
 
@@ -105,7 +105,7 @@ const TIMEOUT = 20000;
     await guest.locator('#screen-online-pass.active').waitFor();
     await guest.waitForFunction(() => {
       const scores = document.querySelector('#online-pass-scores')?.innerText || '';
-      return /CI Host:\\s*0/.test(scores) && /CI Guest:\\s*0/.test(scores);
+      return /CI Host:\s*0/.test(scores) && /CI Guest:\s*0/.test(scores);
     });
 
     if (dialogs.length) throw new Error('Unexpected browser dialogs/errors: ' + dialogs.join(' | '));

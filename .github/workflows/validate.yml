@@ -108,6 +108,22 @@ jobs:
               start = html.index(signature)
               end = html.index(next_signature, start)
               return html[start:end]
+          # Every optimistic state transition must preserve the server-recovered state on a version conflict.
+          rollback_handlers = [
+              ("async function onlineStartGame()", "function onlineRenderState()"),
+              ("async function onlineShowWord()", "function renderOnlineWord()"),
+              ("async function onlineShowGuess()", "function renderOnlineGuess()"),
+              ("async function onlineAwardPoint(", "function renderOnlineResult()"),
+              ("async function onlineContinueAfterResult()", "async function onlineReplaceWord()"),
+              ("async function onlineReplaceWord()", "async function onlineNextPlayer()"),
+              ("async function onlineNextPlayer()", "function onlineNextState()"),
+              ("async function onlineBackToLobby()", "function renderOnlineLobby()"),
+              ("async function onlineRematch()", "function launchConfetti()"),
+          ]
+          for start_signature, end_signature in rollback_handlers:
+              body = function_body(start_signature, end_signature)
+              if "await onlineSave()" not in body or "lastSaveConflict" not in body:
+                  raise SystemExit("State transition lacks conflict-safe save/rollback handling: " + start_signature)
           award = function_body("async function onlineAwardPoint(", "function renderOnlineResult()")
           if "online.state.status!=='guess'" not in award or "onlineCurrentPlayer()?.id!==online.playerId" not in award:
               raise SystemExit("Only the active explainer may award a point during the guess phase")

@@ -2010,5 +2010,34 @@ async function onlineLeaveRoom(){
 }
 
 </script>
+
+<script>
+/* Надёжная обработка нажатий на карточки режимов на iOS */
+(function(){
+  function bindHomeModeButtons(){
+    const offline=document.querySelector('#screen-home .mode-offline');
+    const online=document.querySelector('#screen-home .mode-online');
+    if(offline && !offline.dataset.modeBound){
+      offline.dataset.modeBound='1';
+      offline.addEventListener('click',function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        if(typeof window.go==='function') window.go('offline-setup');
+      },true);
+    }
+    if(online && !online.dataset.modeBound){
+      online.dataset.modeBound='1';
+      online.addEventListener('click',function(event){
+        event.preventDefault();
+        event.stopPropagation();
+        if(typeof window.go==='function') window.go('online');
+      },true);
+    }
+  }
+  if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',bindHomeModeButtons);
+  else bindHomeModeButtons();
+})();
+</script>
+
 </body>
 </html>

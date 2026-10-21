@@ -103,5 +103,37 @@ jobs:
               raise SystemExit("Missing guarded recovery of server state")
           if "finally {\n    if(isSameSession()) online.saving=false;\n  }" not in save_code:
               raise SystemExit("Missing session-safe save lock release")
+          # Guard the most important shared-game transitions against accidental regressions.
+          def function_body(signature, next_signature):
+              start = html.index(signature)
+              end = html.index(next_signature, start)
+              return html[start:end]
+          award = function_body("async function onlineAwardPoint(", "function renderOnlineResult()")
+          if "online.state.status!=='guess'" not in award or "onlineCurrentPlayer()?.id!==online.playerId" not in award:
+              raise SystemExit("Only the active explainer may award a point during the guess phase")
+          if "current.id===guesser.id" not in award or "online.state.status='result'" not in award:
+              raise SystemExit("Point awarding must reject self-guessing and immediately close the guess phase")
+          start_game = function_body("async function onlineStartGame()", "function onlineRenderState()")
+          if "online.playerId!==online.hostId" not in start_game or "players.length < 2" not in start_game:
+              raise SystemExit("Game start must be host-only and require at least two players")
+          finish_game = function_body("async function onlineFinishGame()", "function renderOnlineFinish()")
+          if "online.playerId!==online.hostId" not in finish_game or "online.state.status='finished'" not in finish_game:
+              raise SystemExit("Finishing the game must be host-only and update shared status")
+          rematch = function_body("async function onlineRematch()", "function launchConfetti()")
+          if "online.playerId!==online.hostId" not in rematch or "online.state.status!=='finished'" not in rematch or "getOnlinePlayers().length<2" not in rematch:
+              raise SystemExit("Rematch must be host-only, follow a finished game, and require two players")
+          restore = function_body("async function restoreOnlineSession(", "let onlinePollGeneration = 0;")
+          for marker in ["saved.roomId", "saved.playerToken", "saved.playerId", "rpc('get_room_state'", "onlineSubscribe()"]:
+              if marker not in restore:
+                  raise SystemExit("Session restoration is missing required step: " + marker)
+          join = function_body("async function onlineJoinRoomInternal(", "let onlineEntryBusy = false;")
+          for marker in ["code.length !== 5", "rpc('join_room'", "Array.isArray(joinedState.players)", "saveOnlineSession()"]:
+              if marker not in join:
+                  raise SystemExit("Room joining is missing required validation: " + marker)
+          if "if(onlineEntryBusy) return;" not in html:
+              raise SystemExit("Missing duplicate room-entry request guard")
+          if 'params.get("room")' not in html or r'/^\\d{5}$/.test(roomCode)' not in html:
+              raise SystemExit("Invitation links must accept only five-digit room codes")
+          print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")
           PY

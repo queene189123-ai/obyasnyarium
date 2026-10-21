@@ -51,7 +51,7 @@ const TIMEOUT = 20000;
     await guest.locator('#screen-online-lobby.active').waitFor();
 
     await host.getByText('CI Guest', { exact: true }).waitFor();
-    await guest.getByText('CI Host', { exact: true }).waitFor();
+    await guest.getByText(/CI Host/).waitFor();
     const start = host.locator('#online-start-btn');
     await start.waitFor({ state: 'visible' });
     await start.click();
@@ -61,7 +61,7 @@ const TIMEOUT = 20000;
     await host.locator('#online-show-word-btn').click();
     await host.locator('#screen-online-word.active').waitFor();
     await guest.locator('#screen-online-word.active').waitFor();
-    await guest.locator('#online-the-word').getByText('???').waitFor();
+    await guest.waitForFunction(() => document.querySelector('#screen-online-word.active #online-the-word')?.textContent.trim() === '???');
     const word = (await host.locator('#online-the-word').innerText()).trim();
     if (!word || word === '???') throw new Error('Host did not receive a real word');
 

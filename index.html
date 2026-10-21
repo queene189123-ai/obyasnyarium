@@ -1171,16 +1171,15 @@ function getOnlinePlayers(){ return online.state?.players || []; }
 async function onlineCreateRoomInternal(){
   const name = (document.getElementById('online-host-name')?.value || '').trim().slice(0,20);
   if (!name) { document.getElementById('online-host-name')?.focus(); go('online-name'); return; }
-  online.playerId = makePlayerId();
-  online.playerToken = makePlayerToken();
-  online.name = name;
-  online.hostId = online.playerId;
-  const initialState = { status:'lobby', players:[{id:online.playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
+  // Не меняем активную сессию, пока сервер действительно не создаст комнату.
+  const playerId = makePlayerId();
+  const playerToken = makePlayerToken();
+  const initialState = { status:'lobby', players:[{id:playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
   let created = null;
   for(let i=0;i<10;i++){
     const code = makeRoomCode();
     const {data,error} = await supabaseClient.rpc('create_room', {
-      p_code:code, p_player_id:online.playerId, p_player_token:online.playerToken,
+      p_code:code, p_player_id:playerId, p_player_token:playerToken,
       p_name:name, p_game_state:initialState
     });
     if(!error && data){ created=data; break; }
@@ -1189,8 +1188,9 @@ async function onlineCreateRoomInternal(){
     return;
   }
   if(!created){ alert('Не удалось подобрать код комнаты. Попробуй ещё раз.'); return; }
+  online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
-  online.state=created.game_state; online.version=created.version || 0;
+  online.state=created.game_state; online.version=created.version ?? 0;
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 
@@ -1206,14 +1206,17 @@ async function onlineJoinRoomInternal(){
   const name = document.getElementById('online-join-name').value.trim().slice(0,20);
   const code = document.getElementById('online-join-code').value.trim().replace(/\D/g, '');
   if(!name || code.length !== 5){ alert('Введи имя и 5-значный код'); return; }
-  online.playerId=makePlayerId(); online.playerToken=makePlayerToken(); online.name=name;
+  // Временные данные входа не затрагивают текущую сессию до подтверждения сервера.
+  const playerId=makePlayerId(), playerToken=makePlayerToken();
   const {data,error}=await supabaseClient.rpc('join_room', {
-    p_code:code, p_player_id:online.playerId, p_player_token:online.playerToken, p_name:name
+    p_code:code, p_player_id:playerId, p_player_token:playerToken, p_name:name
   });
   if(error || !data){ alert('Не удалось войти в комнату: '+(error?.message || 'комната не найдена')); return; }
+  const joinedState=data.game_state || {};
+  if(!Array.isArray(joinedState.players)){ alert('Данные комнаты повреждены'); return; }
+  online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=data.id; online.code=data.code; online.hostId=data.host_id;
-  online.state=data.game_state || {}; online.version=data.version || 0;
-  if(!Array.isArray(online.state.players)){ alert('Данные комнаты повреждены'); return; }
+  online.state=joinedState; online.version=data.version ?? 0;
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 

@@ -137,7 +137,7 @@ jobs:
               raise SystemExit("Missing duplicate room-entry request guard")
           if "Не удалось создать комнату из-за ошибки соединения" not in html or "Не удалось войти в комнату из-за ошибки соединения" not in html:
               raise SystemExit("Room entry must show a friendly message when a network call throws")
-          if not re.search(r"finally\s*\{\s*onlineEntryBusy=false;\s*\}", html):
+          if "finally {\\n    onlineEntryBusy=false;\\n  }" not in html:
               raise SystemExit("Room entry lock must always release after a thrown network error")
           if 'params.get("room")' not in html or r'/^\d{5}$/.test(roomCode)' not in html:
               raise SystemExit("Invitation links must accept only five-digit room codes")

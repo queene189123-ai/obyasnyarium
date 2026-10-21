@@ -223,6 +223,10 @@ window.addEventListener('load', () => {
   let restoreOnReload=false;
   try { restoreOnReload=sessionStorage.getItem('obyasnyarium_restore_on_reload')==='1'; } catch(e) {}
   if(restoreOnReload && !roomCode && saved && saved.roomId && saved.playerToken) restoreOnlineSession();
+  // Офлайн-игру восстанавливаем только в этой вкладке после обновления.
+  let restoreOfflineOnReload=false;
+  try { restoreOfflineOnReload=sessionStorage.getItem('obyasnyarium_offline_restore_on_reload')==='1'; } catch(e) {}
+  if(restoreOfflineOnReload && !roomCode) restoreOfflineGame();
 });
 </script>
 </head>
@@ -653,6 +657,77 @@ function go(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
   if (id === 'offline-setup') renderPlayers();
+  if (id === 'home') {
+    try {
+      localStorage.removeItem('obyasnyarium_offline_game_v1');
+      sessionStorage.removeItem('obyasnyarium_offline_restore_on_reload');
+    } catch(e) {}
+  } else {
+    saveOfflineGame(id);
+  }
+}
+
+const OFFLINE_GAME_KEY = 'obyasnyarium_offline_game_v1';
+const OFFLINE_RESTORE_KEY = 'obyasnyarium_offline_restore_on_reload';
+
+function saveOfflineGame(screenId) {
+  if (!state || !state.players || !state.players.length) return;
+  try {
+    localStorage.setItem(OFFLINE_GAME_KEY, JSON.stringify({
+      players: state.players,
+      scores: state.scores,
+      currentIdx: state.currentIdx,
+      round: state.round,
+      currentWord: state.currentWord,
+      currentLetter: state.currentLetter,
+      usedWords: [...state.usedWords],
+      screenId: screenId || document.querySelector('.screen.active')?.id?.replace('screen-', '') || 'offline-setup'
+    }));
+    sessionStorage.setItem(OFFLINE_RESTORE_KEY, '1');
+  } catch(e) { console.warn('Не удалось сохранить офлайн-игру', e); }
+}
+
+function restoreOfflineGame() {
+  let saved;
+  try { saved = JSON.parse(localStorage.getItem(OFFLINE_GAME_KEY) || 'null'); } catch(e) {}
+  if (!saved || !Array.isArray(saved.players) || saved.players.length < 1) return false;
+  state.players = saved.players;
+  state.scores = saved.scores || {};
+  state.currentIdx = Number.isInteger(saved.currentIdx) ? saved.currentIdx : 0;
+  state.round = Number.isInteger(saved.round) ? saved.round : 1;
+  state.currentWord = saved.currentWord || '';
+  state.currentLetter = saved.currentLetter || '';
+  state.usedWords = new Set(Array.isArray(saved.usedWords) ? saved.usedWords : []);
+  const screenId = saved.screenId || 'offline-setup';
+  if (screenId === 'pass') {
+    showPass();
+  } else if (screenId === 'word') {
+    document.getElementById('the-word').textContent = state.currentWord;
+    document.getElementById('the-letter').textContent = state.currentLetter;
+    const hints = document.getElementById('reaction-hints');
+    hints.innerHTML = '';
+    (REACTION_HINTS[state.currentLetter] || []).forEach((word, i) => {
+      const card = document.createElement('div');
+      card.className = 'reaction-hint';
+      const label = document.createElement('span');
+      label.className = 'reaction-label';
+      label.textContent = REACTION_LABELS[i];
+      const value = document.createElement('strong');
+      value.className = 'reaction-word';
+      value.textContent = word;
+      card.appendChild(label); card.appendChild(value); hints.appendChild(card);
+    });
+    go('word');
+  } else if (screenId === 'guess') {
+    showGuess();
+  } else if (screenId === 'score') {
+    showScoreboard();
+  } else if (screenId === 'offline-finish') {
+    endGame();
+  } else {
+    go('offline-setup');
+  }
+  return true;
 }
 
 // ===== ОФЛАЙН: ИГРОКИ =====
@@ -663,6 +738,7 @@ function addPlayer() {
   if (state.players.includes(name)) { alert('Такой игрок уже есть'); return; }
   state.players.push(name);
   state.scores[name] = 0;
+  saveOfflineGame('offline-setup');
   input.value = '';
   input.focus();
   renderPlayers();
@@ -671,6 +747,7 @@ function addPlayer() {
 function removePlayer(name) {
   state.players = state.players.filter(p => p !== name);
   delete state.scores[name];
+  saveOfflineGame('offline-setup');
   renderPlayers();
 }
 
@@ -806,6 +883,7 @@ function resetOfflineGame() {
   state.round = 1;
   state.usedWords = new Set();
   document.body.dataset.confettiRoom = '';
+  try { localStorage.removeItem(OFFLINE_GAME_KEY); sessionStorage.removeItem(OFFLINE_RESTORE_KEY); } catch(e) {}
   go('home');
 }
 

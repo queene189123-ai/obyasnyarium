@@ -867,6 +867,76 @@ body {
   #screen-home .small-text { margin-top:5px;padding-top:8px;line-height:1.35; }
 }
 
+
+/* Главная: логотип и визуальные карточки режимов */
+#screen-home {
+  position:relative; justify-content:flex-start;
+  gap:0; padding: max(12px,env(safe-area-inset-top)) 18px max(14px,env(safe-area-inset-bottom));
+  background:radial-gradient(ellipse at 50% 12%,#f0eaff 0%,#faf8ff 43%,#fffaf7 100%);
+}
+#screen-home::before, #screen-home::after { content:none !important; }
+#screen-home .home-logo {
+  display:block; width:min(100%,520px); height:clamp(235px,43vh,410px);
+  object-fit:contain; flex:0 0 auto; margin:0 auto 3px;
+  filter:drop-shadow(0 10px 12px rgba(66,36,153,.09));
+}
+#screen-home .mode-choices {
+  display:grid; grid-template-columns:repeat(2,minmax(0,1fr));
+  gap:13px; width:100%; max-width:520px; margin:0 auto;
+}
+#screen-home .mode-card {
+  appearance:none; border:0; border-radius:25px; min-width:0;
+  min-height:clamp(155px,23vh,205px); padding:15px 8px 17px;
+  display:flex; flex-direction:column; align-items:center; justify-content:center;
+  gap:7px; cursor:pointer; color:#34206e; font:inherit;
+  box-shadow:0 7px 0 rgba(64,39,140,.13),0 14px 24px rgba(69,45,141,.11);
+  transition:transform .15s ease, box-shadow .15s ease;
+}
+#screen-home .mode-offline { background:linear-gradient(145deg,#fff 0%,#f1ebff 100%); border:2px solid #d9ceff; }
+#screen-home .mode-online { background:linear-gradient(145deg,#fff3ef 0%,#ffe0d8 100%); border:2px solid #ffc4b8; }
+#screen-home .mode-art {
+  display:flex; align-items:center; justify-content:center;
+  width:clamp(72px,18vw,100px); height:clamp(72px,18vw,100px);
+  border-radius:24px; font-size:clamp(43px,11vw,58px);
+  background:rgba(255,255,255,.8); box-shadow:inset 0 2px 0 #fff,0 5px 12px rgba(55,30,120,.08);
+}
+#screen-home .mode-label { font-size:clamp(20px,5.5vw,25px); line-height:1.1; font-weight:900; letter-spacing:-.5px; }
+#screen-home .mode-caption { font-size:clamp(11px,3vw,13px); line-height:1.2; color:#766b91; font-weight:650; text-align:center; }
+#screen-home .mode-card:active { transform:translateY(4px) scale(.985); box-shadow:0 2px 0 rgba(64,39,140,.13),0 5px 10px rgba(69,45,141,.08); }
+#screen-home .sound-toggle {
+  order:initial; width:auto; min-height:42px; margin:17px auto 0; padding:9px 17px;
+  border:1px solid #e2d9fb; border-radius:999px; color:#67548f;
+  background:#f2edff; box-shadow:none; font-size:15px; font-weight:800; transform:none;
+}
+#screen-home .small-text {
+  order:initial; max-width:420px; width:100%; margin:12px auto 0; padding:0 5px;
+  color:#817694; text-align:center; font-size:14px; line-height:1.5; font-weight:600;
+}
+#screen-home .small-text::before { content:none; }
+#screen-home .small-text strong { color:#6d51d4; font-weight:850; }
+#screen-home .btn { transform:none; }
+@media(max-height:760px) {
+  #screen-home .home-logo { height:clamp(190px,36vh,285px); margin-bottom:0; }
+  #screen-home .mode-card { min-height:clamp(130px,22vh,170px); }
+  #screen-home .mode-art { width:68px;height:68px;font-size:42px;border-radius:20px; }
+  #screen-home .sound-toggle { margin-top:11px; }
+  #screen-home .small-text { margin-top:7px;font-size:13px;line-height:1.35; }
+}
+@media(max-height:640px) {
+  #screen-home { padding-top:6px;padding-bottom:8px; }
+  #screen-home .home-logo { height:170px; }
+  #screen-home .mode-card { min-height:115px;padding:8px 5px;gap:4px;border-radius:19px; }
+  #screen-home .mode-art { width:54px;height:54px;font-size:34px;border-radius:16px; }
+  #screen-home .mode-label { font-size:19px; }
+  #screen-home .mode-caption { font-size:10px; }
+  #screen-home .sound-toggle { margin-top:7px;min-height:35px;padding:6px 12px; }
+  #screen-home .small-text { margin-top:5px;font-size:11px;line-height:1.25; }
+}
+@media(min-width:600px) {
+  #screen-home .home-logo { height:min(44vh,420px); }
+  #screen-home .mode-card { min-height:195px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -894,12 +964,21 @@ window.addEventListener('load', () => {
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
-  <div class="subtitle">Используй свой словарный запас и смекалку</div>
-  <div class="title">Объясняриум</div>
-  <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
-  <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <img class="home-logo" src="./logo.svg" alt="Объясняриум">
+  <div class="mode-choices">
+    <button class="mode-card mode-offline" onclick="go('offline-setup')">
+      <span class="mode-art" aria-hidden="true">🎲</span>
+      <span class="mode-label">Офлайн</span>
+      <span class="mode-caption">Все рядом</span>
+    </button>
+    <button class="mode-card mode-online" onclick="go('online')">
+      <span class="mode-art" aria-hidden="true">🌐</span>
+      <span class="mode-label">Онлайн</span>
+      <span class="mode-caption">Играй на расстоянии</span>
+    </button>
+  </div>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
-  <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
+  <div class="small-text">Объясняй, угадывай, смейся!<br>Без однокоренных слов. Можно жестами и иностранными словами.<br><strong>Более 7 000 слов и сочетаний</strong></div>
 </div>
 
 <!-- ОФЛАЙН: ВВОД ИМЁН -->

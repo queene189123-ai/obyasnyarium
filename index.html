@@ -1045,12 +1045,12 @@ document.addEventListener('click', function(event) {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices">
-    <button type="button" class="mode-card mode-offline" onclick="emergencyNavigate('offline-setup')">
+    <button type="button" class="mode-card mode-offline" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');document.getElementById('players-list').innerHTML='';document.getElementById('start-btn').style.display='none';">
       <span class="mode-art" aria-hidden="true">🎲</span>
       <span class="mode-label">Офлайн</span>
       <span class="mode-caption">Все рядом</span>
     </button>
-    <button type="button" class="mode-card mode-online" onclick="emergencyNavigate('online')">
+    <button type="button" class="mode-card mode-online" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-online').classList.add('active');">
       <span class="mode-art" aria-hidden="true">🌐</span>
       <span class="mode-label">Онлайн</span>
       <span class="mode-caption">Играй на расстоянии</span>

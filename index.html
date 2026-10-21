@@ -1365,8 +1365,12 @@ async function onlineFinishGame(){
   online.state.status='finished';
   const saved=await onlineSave();
   if(!saved){
-    online.state.status=previousStatus;
+    // При конфликте onlineSave уже подтянул актуальное состояние комнаты.
+    // Не перезаписываем его локальным статусом из устаревшего снимка.
+    if(!online.lastSaveConflict && online.state) online.state.status=previousStatus;
+    online.lastSaveConflict=false;
     updateOnlineHud();
+    onlineRenderState();
     return;
   }
   onlineRenderState();
@@ -1394,7 +1398,12 @@ async function onlineRematch(){
   online.state.timerEndsAt=0;
   getOnlinePlayers().forEach(p=>p.score=0);
   const saved=await onlineSave();
-  if(!saved){online.state=previousState;onlineRenderState();}
+  if(!saved){
+    // Не откатываем реванш поверх более свежего состояния, полученного при VERSION_CONFLICT.
+    if(!online.lastSaveConflict) online.state=previousState;
+    online.lastSaveConflict=false;
+    onlineRenderState();
+  }
 }
 function launchConfetti(){
   playTone(880,.12); setTimeout(()=>playTone(660,.18),140);

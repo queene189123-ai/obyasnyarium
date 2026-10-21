@@ -169,8 +169,7 @@ body {
 #online-room-hud .room-hud-stop { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#fff; color:var(--accent-dark); border:1px solid #f0e8dc; pointer-events:auto; }
 #online-room-hud .room-hud-actions { display:flex; gap:6px; pointer-events:auto; }
 #online-room-hud .room-hud-finish { width:auto; margin:0; padding:7px 10px; border-radius:9px; font-size:12px; background:#e8826b; color:#fff; border:1px solid #d06a55; pointer-events:auto; font-weight:700; }
-#online-pass-scores { width:100%; max-width:420px; margin:20px auto 0; padding:12px; border:2px solid #d6a99d; border-radius:14px; background:linear-gradient(135deg,#fff0eb,#f0eaff); color:#30243b; font-size:14px; font-weight:700; line-height:1.8; box-shadow:0 5px 16px rgba(45,42,38,.10); }
-#online-pass-scores span { display:inline-block; margin:3px; padding:6px 10px; border:1px solid #d6a99d; border-radius:9px; background:#fff; color:#30243b; font-weight:800; }
+#online-pass-scores { width:100%; max-width:420px; margin:20px auto 0; line-height:1.8; }
 
 /* Адаптация для небольших экранов */
 @media (max-width: 420px) {
@@ -324,6 +323,7 @@ window.addEventListener('load', () => {
     <div class="pass-text" id="online-pass-round"></div>
     <button class="btn btn-primary" id="online-show-word-btn" onclick="onlineShowWord()">Погнали 🎲</button>
     <div class="small-text score-strip" id="online-pass-scores"></div>
+    <button class="btn btn-ghost online-finish-inline" onclick="onlineFinishGame()" style="display:none">Завершить игру</button>
   </div>
 </div>
 
@@ -350,6 +350,7 @@ window.addEventListener('load', () => {
   <div class="subtitle" id="online-score-round"></div>
   <div class="scoreboard" id="online-scoreboard"></div>
   <button class="btn btn-primary" onclick="onlineNextPlayer()">Следующий ход →</button>
+  <button class="btn btn-ghost online-finish-inline" onclick="onlineFinishGame()" style="display:none">Завершить игру</button>
   <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
 </div>
 <div class="screen" id="screen-offline-finish">
@@ -855,6 +856,7 @@ function updateOnlineHud(){
   const canFinish=active && online.playerId===online.hostId && online.state && online.state.status!=='lobby' && online.state.status!=='finished';
   const finish=document.getElementById('online-finish-btn');
   if(finish) finish.style.display=canFinish ? 'block' : 'none';
+  document.querySelectorAll('.online-finish-inline').forEach(btn=>btn.style.display=canFinish && online.state && online.state.status!=='finished' ? 'block' : 'none');
 }
 async function onlineStopGame(){
   if(!online.roomId || online.playerId!==online.hostId) return;

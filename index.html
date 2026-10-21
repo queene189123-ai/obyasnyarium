@@ -1235,6 +1235,8 @@ async function onlineJoinRoomInternal(){
   online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=data.id; online.code=data.code; online.hostId=data.host_id;
   online.state=joinedState; online.version=data.version ?? 0;
+  // Remove the invitation parameter after a successful join so refreshing this tab restores the joined room.
+  try { const cleanUrl=new URL(location.href); cleanUrl.searchParams.delete('room'); history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash); } catch(e) {}
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 

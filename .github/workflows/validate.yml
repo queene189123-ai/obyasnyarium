@@ -54,12 +54,11 @@ jobs:
               "function onlineSubscribe(",
               "window.addEventListener('offline'",
               "window.addEventListener('online'",
-              "Запоздавший ответ опроса не должен откатывать",
-              "Запрашиваем актуальную версию напрямую",
               "let onlinePollGeneration = 0;",
               "A response from an old room/session must never affect the current screen.",
-              "An older request must not release the lock owned by a newer subscription.",
-              "Сохраняем блокировку действий и опроса до завершения восстановления состояния",
+              "async function onlineSync()",
+              "async function onlineSave()",
+              "const recoverLatestState=async()=>",
           ]
           missing = [item for item in required if item not in html]
           if missing:
@@ -71,10 +70,12 @@ jobs:
           sync_code = html[sync_start:sync_end]
           if "pollGeneration!==onlinePollGeneration" not in sync_code or "if(pollGeneration===onlinePollGeneration) online.pollBusy=false" not in sync_code:
               raise SystemExit("Missing stale-subscription response guards")
-          conflict_start = html.index("if(/VERSION_CONFLICT/i.test(error.message || ''))")
-          conflict_end = html.index("alert('Состояние комнаты уже обновилось. Повтори действие.')", conflict_start)
-          conflict_recovery = html[conflict_start:conflict_end]
-          if "online.saving=false" in conflict_recovery:
-              raise SystemExit("Actions must remain locked during conflict recovery")
+          save_start = html.index("async function onlineSave()")
+          save_end = html.index("async function onlineFinishGame()", save_start)
+          save_code = html[save_start:save_end]
+          if "const recoverLatestState=async()=>{" not in save_code or "if(!isSameSession()) return false;" not in save_code:
+              raise SystemExit("Missing guarded recovery of server state")
+          if "finally {\n    if(isSameSession()) online.saving=false;\n  }" not in save_code:
+              raise SystemExit("Missing session-safe save lock release")
           print("Critical online-game handlers and conflict guard are present")
           PY

@@ -7,7 +7,7 @@ const TIMEOUT = 20000;
   const browser = await chromium.launch({ headless: true });
   // Run the host on a phone-sized viewport and the guest on desktop.
   const hostContext = await browser.newContext({
-    viewport: { width: 390, height: 844 },
+    viewport: { width: 320, height: 740 },
     deviceScaleFactor: 1,
     isMobile: true,
     hasTouch: true

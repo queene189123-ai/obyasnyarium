@@ -1202,7 +1202,7 @@ async function onlineJoinRoomInternal(){
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   if(saved && saved.roomId && saved.playerToken && saved.playerId){
     const inviteCode=new URLSearchParams(location.search).get('room');
-    const joiningDifferentInvite=!!inviteCode && /^\\d{5}$/.test(inviteCode) && inviteCode!==String(saved.code||'');
+    const joiningDifferentInvite=!!inviteCode && /^\d{5}$/.test(inviteCode) && inviteCode!==String(saved.code||'');
     if(joiningDifferentInvite){
       // Opening an invite to a different room should not silently send the player back to an old room.
       // Best-effort removal from the old room; joining the invited room must not wait on a flaky network.

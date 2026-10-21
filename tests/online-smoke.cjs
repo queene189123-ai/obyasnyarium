@@ -87,7 +87,7 @@ const TIMEOUT = 20000;
     });
 
     // Finish the game, start a rematch, and confirm scores reset on both clients.
-    await host.locator('#online-finish-btn').click();
+    await host.locator('.online-finish-inline:visible').first().click();
     await host.locator('#screen-online-finish.active').waitFor();
     await guest.locator('#screen-online-finish.active').waitFor();
     await host.locator('#online-rematch-btn').click();

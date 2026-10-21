@@ -457,6 +457,7 @@ window.addEventListener('load', () => {
 <div class="screen" id="screen-online-lobby">
   <div class="title" style="font-size:32px">Комната</div>
   <div class="subtitle">Код: <b id="online-room-code"></b></div>
+  <div class="subtitle" id="online-lobby-hint" role="status" aria-live="polite">Отправь код другу. Когда он подключится, можно начинать игру.</div>
 
   <button class="btn btn-secondary" id="online-share-btn" onclick="shareOnlineRoom()">🔗 Пригласить игроков</button>
   <div class="scoreboard" id="online-lobby-players"></div>
@@ -1264,9 +1265,16 @@ function renderOnlineLobby(){
   });
   const startBtn=document.getElementById('online-start-btn');
   const isHost=online.playerId===online.hostId;
+  const playerCount=getOnlinePlayers().length;
   startBtn.style.display=isHost?'block':'none';
-  startBtn.disabled=getOnlinePlayers().length<2;
+  startBtn.disabled=playerCount<2;
   startBtn.textContent=startBtn.disabled?'Ждём второго игрока…':'Начать игру';
+  const hint=document.getElementById('online-lobby-hint');
+  if(hint){
+    hint.textContent=playerCount<2
+      ? (isHost?'Отправь код комнаты другу. Игра начнётся, когда подключится второй игрок.':'Ты в комнате! Ждём, пока ведущий пригласит остальных игроков.')
+      : (isHost?'Игроков в комнате: '+playerCount+'. Можно начинать!':'Игроков в комнате: '+playerCount+'. Ожидаем запуск ведущим.');
+  }
 }
 
 async function onlineStartGame(){

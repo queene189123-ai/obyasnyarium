@@ -1328,6 +1328,8 @@ async function onlineSync(){
     // Пока выполняется сохранение хода, не применяем ответ старого опроса поверх локального действия.
     if(online.saving) return;
     if(error || !data){ online.connectionLost=true; updateOnlineHud(); return; }
+    // Запоздавший ответ опроса не должен откатывать уже известную более новую версию.
+    if(Number.isFinite(Number(data.version)) && Number(data.version) < Number(online.version || 0)) return;
     online.connectionLost=false; updateOnlineHud();
     const changed = data.version !== online.version || JSON.stringify(data.game_state) !== JSON.stringify(online.state) || data.host_id !== online.hostId;
     if(changed){
@@ -1354,7 +1356,24 @@ async function onlineSave(){
         // Не даём обработчику откатить локальное состояние поверх более свежего состояния комнаты.
         online.lastSaveConflict=true;
         online.saving=false;
-        await onlineSync();
+        // Запрашиваем актуальную версию напрямую: обычный опрос может быть занят старым запросом.
+        try {
+          const latest=await supabaseClient.rpc('get_room_state', {
+            p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken
+          });
+          if(!latest.error && latest.data){
+            online.state=latest.data.game_state || {};
+            online.hostId=latest.data.host_id;
+            online.version=latest.data.version || 0;
+            online.connectionLost=false;
+            saveOnlineSession(); updateOnlineHud(); onlineRenderState();
+          } else {
+            online.connectionLost=true; updateOnlineHud();
+          }
+        } catch(syncError) {
+          online.connectionLost=true; updateOnlineHud();
+          console.warn('Не удалось загрузить актуальное состояние после конфликта:',syncError);
+        }
         alert('Состояние комнаты уже обновилось. Повтори действие.');
       }
       else alert('Ошибка синхронизации: '+error.message);

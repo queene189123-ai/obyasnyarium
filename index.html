@@ -755,6 +755,60 @@ body { background:#fff8f0; color:#2e167f; }
   #screen-home .small-text { margin-top:12px; }
 }
 
+
+/* Корректировки главного экрана: всё помещается, без случайных значков */
+#screen-home {
+  justify-content:center;
+  padding-top:clamp(20px,3vh,34px);
+  padding-bottom:clamp(18px,3vh,30px);
+}
+#screen-home::before {
+  width:190px;height:150px;top:-82px;left:-90px;
+  opacity:.88; box-shadow:25px 18px 0 -9px #b69aff;
+}
+#screen-home::after {
+  width:200px;height:160px;right:-105px;bottom:-88px;
+  opacity:.9; box-shadow:-22px -15px 0 -8px #b69aff;
+}
+#screen-home .home-tagline {
+  margin-top:0; margin-bottom:clamp(18px,3vh,30px);
+  padding:13px 20px; font-size:clamp(15px,4vw,21px);
+  max-width:320px;
+}
+#screen-home .home-title {
+  margin-bottom:clamp(45px,8vh,78px);
+  font-size:clamp(38px,9.5vw,66px);
+  letter-spacing:-2px;
+}
+#screen-home .home-title::after {
+  height:8px; bottom:-13px; width:55%;
+}
+#screen-home .btn {
+  min-height:clamp(66px,9vh,82px);
+  margin-bottom:clamp(13px,2vh,20px);
+  padding-left:24px; padding-right:24px;
+  text-align:center;
+}
+#screen-home .btn::before { display:none; }
+#screen-home .btn-primary::after,
+#screen-home .btn-secondary::after { display:none; }
+#screen-home .small-text {
+  margin-top:clamp(12px,2vh,22px);
+  font-size:clamp(14px,3.7vw,17px);
+  line-height:1.4;
+}
+#screen-home .small-text::before { margin-bottom:10px; }
+#screen-home .sound-toggle { margin-top:4px; padding:6px 12px; }
+@media(max-height:760px) {
+  #screen-home { padding-top:12px;padding-bottom:12px; }
+  #screen-home .home-tagline { margin-bottom:14px;padding:10px 16px; }
+  #screen-home .home-title { margin-bottom:36px; }
+  #screen-home .btn { min-height:58px;margin-bottom:10px; }
+  #screen-home .small-text { margin-top:7px; }
+  #screen-home .small-text::before { margin-bottom:6px; }
+  #screen-home .sound-toggle { margin-top:0; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

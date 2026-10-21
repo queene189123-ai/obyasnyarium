@@ -313,64 +313,17 @@ body {
   font-size: clamp(38px, 10vw, 52px);
   margin-bottom: 14px;
 }
-#screen-home .title::before { content: none; }
-.brand-logo {
-  position: relative;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  width: min(320px, 86vw);
-  height: 112px;
-  margin: 0 auto 20px;
-  color: #7161d8;
-  isolation: isolate;
+#screen-home .subtitle {
+  max-width: 330px;
+  margin: 0 auto 34px;
+  font-size: clamp(17px, 4.5vw, 20px);
+  line-height: 1.45;
 }
-.brand-logo .logo-ring {
-  position: absolute;
-  inset: 0;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 120px;
-  line-height: .8;
-  font-weight: 900;
-  letter-spacing: -10px;
-  color: #7968e5;
-  -webkit-text-stroke: 5px #5542bd;
-  text-shadow: 0 5px 0 rgba(64,47,159,.14), 0 12px 24px rgba(102,84,210,.18);
-  z-index: -1;
-}
-.brand-logo .logo-word {
-  display: block;
-  max-width: 100%;
-  padding: 5px 8px;
-  border-radius: 12px;
-  background: rgba(250,248,255,.94);
-  color: #30216f;
-  font-size: clamp(22px, 6.6vw, 29px);
-  font-weight: 900;
-  letter-spacing: -1.1px;
-  line-height: 1;
-  white-space: nowrap;
-  transform: rotate(-3deg);
-  text-shadow: 0 2px 0 rgba(255,255,255,.8);
-}
-.brand-logo .logo-spark {
-  position: absolute;
-  color: #ff806d;
-  font-size: 23px;
-  font-weight: 900;
-}
-.brand-logo .logo-spark.left { left: 4px; top: 19px; transform: rotate(-18deg); }
-.brand-logo .logo-spark.right { right: 2px; bottom: 15px; transform: rotate(18deg); }
-#screen-home .subtitle { margin-bottom: 34px; }
 #screen-home .small-text { max-width: 310px; font-size: 13px; }
 @media (max-width: 420px) {
   .screen { padding-left: 18px; padding-right: 18px; }
-  .brand-logo { height: 96px; margin-bottom: 18px; }
-  .brand-logo .logo-ring { font-size: 105px; }
-  .brand-logo .logo-word { font-size: clamp(19px, 6.2vw, 25px); }
 }
+
 @media (prefers-reduced-motion: reduce) {
   .btn, .guess-btn { transition: none; }
 }
@@ -379,15 +332,6 @@ body {
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 window.addEventListener('load', () => {
-  const homeScreen = document.getElementById('screen-home');
-  if (homeScreen && !homeScreen.querySelector('.brand-logo')) {
-    const logo = document.createElement('div');
-    logo.className = 'brand-logo';
-    logo.setAttribute('aria-label', 'Логотип Объясняриума');
-    logo.innerHTML = '<span class="logo-ring" aria-hidden="true">О</span><span class="logo-spark left" aria-hidden="true">✦</span><span class="logo-word">бъясняриум</span><span class="logo-spark right" aria-hidden="true">✦</span>';
-    const title = homeScreen.querySelector('.title');
-    if (title) homeScreen.insertBefore(logo, title);
-  }
   loadGameSettings();
   const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");}
   let saved=null;
@@ -412,7 +356,7 @@ window.addEventListener('load', () => {
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
   <div class="title">Объясняриум</div>
-  <div class="subtitle">Объясни слово — используя только слова<br>на выпавшую букву</div>
+  <div class="subtitle">Продемонстрируй свой лексикон! Похвастайся словарным запасом и смекалкой.</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>

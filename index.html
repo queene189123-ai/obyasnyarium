@@ -1191,7 +1191,12 @@ async function onlineSave(){
       p_expected_version:online.version, p_game_state:online.state
     });
     if(error){
-      if(/VERSION_CONFLICT/i.test(error.message || '')){ await onlineSync(); alert('Состояние комнаты уже обновилось. Повтори действие.'); }
+      if(/VERSION_CONFLICT/i.test(error.message || '')){
+        // onlineSync пропускает вызов во время сохранения — снимаем блокировку на время перечитывания.
+        online.saving=false;
+        await onlineSync();
+        alert('Состояние комнаты уже обновилось. Повтори действие.');
+      }
       else alert('Ошибка синхронизации: '+error.message);
       return false;
     }

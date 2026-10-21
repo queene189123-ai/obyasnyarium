@@ -218,7 +218,8 @@ window.addEventListener('load', () => {
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   const btn=document.getElementById('online-resume-btn');
   if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
-  if(!roomCode) restoreOnlineSession();
+  // Не восстанавливаем прошлую комнату автоматически: при открытии сайта показываем главный экран.
+  // Продолжить прошлую комнату можно вручную через кнопку в экране входа.
 });
 </script>
 </head>

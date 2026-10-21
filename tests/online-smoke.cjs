@@ -58,7 +58,9 @@ const TIMEOUT = 20000;
     await host.locator('#online-host-name').fill('CI Host');
     await host.getByRole('button', { name: 'Создать', exact: true }).click();
     await host.locator('#screen-online-lobby.active').waitFor();
-    await assertNoHorizontalOverflow(host, 'host lobby');
+    await assertNoHorizontalOverflow(host, 'host lobby at 390px');
+    await host.setViewportSize({ width: 320, height: 740 });
+    await assertNoHorizontalOverflow(host, 'host lobby at 320px');
     const code = (await host.locator('#online-room-code').innerText()).trim();
     if (!/^\d{5}$/.test(code)) throw new Error('Host received invalid room code: ' + code);
 

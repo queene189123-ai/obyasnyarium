@@ -517,6 +517,28 @@ body {
   #screen-home .title { margin-bottom: 54px; }
 }
 
+
+/* Move main actions lower for a more comfortable thumb reach */
+#screen-home .btn {
+  transform:translateY(30px);
+}
+#screen-home .btn:active {
+  transform:translateY(32px) scale(.99);
+}
+#screen-home .small-text {
+  margin-top:43px;
+}
+@media(max-height:760px) {
+  #screen-home .btn { transform:translateY(24px); }
+  #screen-home .btn:active { transform:translateY(26px) scale(.99); }
+  #screen-home .small-text { margin-top:34px; }
+}
+@media(max-height:680px) {
+  #screen-home .btn { transform:translateY(14px); }
+  #screen-home .btn:active { transform:translateY(16px) scale(.99); }
+  #screen-home .small-text { margin-top:22px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

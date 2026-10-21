@@ -52,7 +52,7 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
 .btn-secondary { background: var(--card); color: var(--text); box-shadow: var(--shadow); border: 2px solid #f0e8dc; }
 .btn-secondary:active { transform: scale(0.97); }
 .btn-ghost { background: transparent; color: var(--muted); font-size: 16px; padding: 12px; }
-.title { font-size: 42px; font-weight: 800; margin-bottom: 8px; text-align: center; letter-spacing: -1px; }
+.title-logo { display: block; width: min(320px, 78vw); height: auto; margin: 0 auto 8px; }
 .subtitle { font-size: 16px; color: var(--muted); margin-bottom: 40px; text-align: center; }
 .input {
   width: 100%;
@@ -355,7 +355,7 @@ window.addEventListener('load', () => {
 
 <!-- ГЛАВНЫЙ ЭКРАН -->
 <div class="screen active" id="screen-home">
-  <div class="title">Объясняриум</div>
+  <img class="title-logo" src="logo.svg" alt="Объясняриум">
   <div class="subtitle">Продемонстрируй свой лексикон! Похвастайся словарным запасом и смекалкой.</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>

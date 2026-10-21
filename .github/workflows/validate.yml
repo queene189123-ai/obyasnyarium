@@ -132,7 +132,7 @@ jobs:
                   raise SystemExit("Room joining is missing required validation: " + marker)
           if "if(onlineEntryBusy) return;" not in html:
               raise SystemExit("Missing duplicate room-entry request guard")
-          if 'params.get("room")' not in html or r'/^\\d{5}$/.test(roomCode)' not in html:
+          if 'params.get("room")' not in html or r'/^\d{5}$/.test(roomCode)' not in html:
               raise SystemExit("Invitation links must accept only five-digit room codes")
           print("Online turn, scoring, rematch, session recovery, and invite checks passed")
           print("Critical online-game handlers and conflict guard are present")

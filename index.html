@@ -2039,9 +2039,8 @@ async function onlineLeaveRoom(){
     }
     document.querySelectorAll('.screen').forEach(function (screen) {
       screen.classList.remove('active');
-      screen.style.display = 'none';
+      screen.style.removeProperty('display');
     });
-    target.style.display = 'flex';
     target.classList.add('active');
     if (screenId === 'offline-setup' && typeof renderPlayers === 'function') {
       try { renderPlayers(); } catch (err) { console.error(err); }

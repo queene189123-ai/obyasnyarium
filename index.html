@@ -1314,13 +1314,24 @@ async function restoreOnlineSession(manual=false){
 }
 
 let onlinePollGeneration = 0;
+let onlineVisibilityHandler = null;
+let onlineNetworkHandlersInstalled = false;
 function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
   // Invalidates any request from a previous room/session subscription.
   onlinePollGeneration++;
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
-  if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('offline',()=>{online.connectionLost=true;updateOnlineHud();});window.addEventListener('online',()=>{online.connectionLost=false;updateOnlineHud();onlineSync();});}
+  // Keep global browser listeners outside the replaceable room-session object.
+  if(!onlineVisibilityHandler){
+    onlineVisibilityHandler=()=>{if(document.visibilityState==='visible' && online.roomId) onlineSync();};
+    document.addEventListener('visibilitychange',onlineVisibilityHandler);
+  }
+  if(!onlineNetworkHandlersInstalled){
+    onlineNetworkHandlersInstalled=true;
+    window.addEventListener('offline',()=>{if(!online.roomId) return;online.connectionLost=true;updateOnlineHud();});
+    window.addEventListener('online',()=>{if(!online.roomId) return;online.connectionLost=false;updateOnlineHud();onlineSync();});
+  }
   onlineSync();
 }
 

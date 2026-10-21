@@ -809,6 +809,16 @@ body { background:#fff8f0; color:#2e167f; }
   #screen-home .sound-toggle { margin-top:0; }
 }
 
+
+/* Ensure decorative layers never intercept taps */
+#screen-home { position:relative; }
+#screen-home::before, #screen-home::after { pointer-events:none !important; }
+#screen-home > .home-tagline,
+#screen-home > .home-title,
+#screen-home > .btn,
+#screen-home > .small-text { position:relative; z-index:1; pointer-events:auto; }
+#screen-home > .btn { touch-action:manipulation; }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

@@ -190,6 +190,35 @@ const TIMEOUT = 20000;
       throw new Error('Server accepted a null game state: ' + JSON.stringify(invalidPayloadUpdate));
     }
 
+    // A valid token must not allow a client to add fake participants to the persisted game state.
+    const fakeMemberUpdate = await host.evaluate(async () => {
+      const latest = await supabaseClient.rpc('get_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: online.playerToken
+      });
+      if (latest.error || !latest.data) {
+        return { accepted: false, error: latest.error?.message || 'ROOM_NOT_FOUND' };
+      }
+      const state = latest.data.game_state || {};
+      const players = Array.isArray(state.players) ? state.players : [];
+      const forgedPlayers = [
+        ...players.filter(player => player.id !== 'forged-nonmember'),
+        { id: 'forged-nonmember', name: 'Fake player', score: 0 }
+      ];
+      const { data, error } = await supabaseClient.rpc('update_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: online.playerToken,
+        p_expected_version: latest.data.version,
+        p_game_state: { ...state, players: forgedPlayers }
+      });
+      return { accepted: !!data, error: error?.message || '' };
+    });
+    if (fakeMemberUpdate.accepted || !/INVALID_GAME_STATE/.test(fakeMemberUpdate.error)) {
+      throw new Error('Server accepted a fake participant in room state: ' + JSON.stringify(fakeMemberUpdate));
+    }
+
     // Room should remain alive after authenticated activity.
     const activityTouch = await host.evaluate(async () => {
       const { data, error } = await supabaseClient.rpc('get_room_state', {

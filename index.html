@@ -1327,14 +1327,14 @@ function onlineSubscribe(){
 async function onlineSync(){
   if(!online.roomId || !online.playerToken || online.pollBusy || online.saving) return;
   const pollGeneration=onlinePollGeneration;
-  const requestRoomId=online.roomId, requestPlayerId=online.playerId;
+  const requestRoomId=online.roomId, requestPlayerId=online.playerId, requestPlayerToken=online.playerToken;
   online.pollBusy=true;
   try{
     const {data,error}=await supabaseClient.rpc('get_room_state', {
-      p_room_id:requestRoomId, p_player_id:requestPlayerId, p_player_token:online.playerToken
+      p_room_id:requestRoomId, p_player_id:requestPlayerId, p_player_token:requestPlayerToken
     });
     // A response from an old room/session must never affect the current screen.
-    if(pollGeneration!==onlinePollGeneration || requestRoomId!==online.roomId || requestPlayerId!==online.playerId) return;
+    if(pollGeneration!==onlinePollGeneration || requestRoomId!==online.roomId || requestPlayerId!==online.playerId || requestPlayerToken!==online.playerToken) return;
     // Пока выполняется сохранение хода, не применяем ответ старого опроса поверх локального действия.
     if(online.saving) return;
     if(error || !data){ online.connectionLost=true; updateOnlineHud(); return; }

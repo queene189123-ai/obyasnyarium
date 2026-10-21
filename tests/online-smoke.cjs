@@ -80,6 +80,32 @@ const TIMEOUT = 20000;
     if (hostImpersonation.hasData || !/PLAYER_NOT_AUTHORIZED/.test(hostImpersonation.error)) {
       throw new Error('Server accepted an attempt to impersonate the room host: ' + JSON.stringify(hostImpersonation));
     }
+    const wrongTokenUpdate = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('update_room_state', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: 'invalid-token-for-security-test-000000',
+        p_expected_version: 0,
+        p_game_state: {}
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (wrongTokenUpdate.hasData || !/PLAYER_NOT_AUTHORIZED/.test(wrongTokenUpdate.error)) {
+      throw new Error('Server accepted a room-state update with an invalid player token: ' + JSON.stringify(wrongTokenUpdate));
+    }
+
+    const wrongTokenLeave = await guest.evaluate(async () => {
+      const { data, error } = await supabaseClient.rpc('leave_room', {
+        p_room_id: online.roomId,
+        p_player_id: online.playerId,
+        p_player_token: 'invalid-token-for-security-test-000000'
+      });
+      return { hasData: !!data, error: error?.message || '' };
+    });
+    if (wrongTokenLeave.hasData || !/PLAYER_NOT_AUTHORIZED/.test(wrongTokenLeave.error)) {
+      throw new Error('Server accepted leaving a room with an invalid player token: ' + JSON.stringify(wrongTokenLeave));
+    }
+
     const start = host.locator('#online-start-btn');
     await start.waitFor({ state: 'visible' });
     await start.click();

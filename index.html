@@ -992,12 +992,12 @@ window.addEventListener('load', () => {
 <div class="screen active" id="screen-home">
   <img class="home-logo" src="./logo.svg" alt="Объясняриум">
   <div class="mode-choices">
-    <button class="mode-card mode-offline" onclick="go('offline-setup')">
+    <button class="mode-card mode-offline" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-offline-setup').classList.add('active');if(typeof renderPlayers==='function'){renderPlayers()}">
       <span class="mode-art" aria-hidden="true">🎲</span>
       <span class="mode-label">Офлайн</span>
       <span class="mode-caption">Все рядом</span>
     </button>
-    <button class="mode-card mode-online" onclick="go('online')">
+    <button class="mode-card mode-online" onclick="document.querySelectorAll('.screen').forEach(function(x){x.classList.remove('active')});document.getElementById('screen-online').classList.add('active')">
       <span class="mode-art" aria-hidden="true">🌐</span>
       <span class="mode-label">Онлайн</span>
       <span class="mode-caption">Играй на расстоянии</span>
@@ -2011,27 +2011,7 @@ async function onlineLeaveRoom(){
 
 </script>
 
-<script>
-/* Навигация главного экрана через делегирование событий */
-document.addEventListener('click', function(event) {
-  const card = event.target.closest('#screen-home .mode-card');
-  if (!card) return;
-  const target = card.classList.contains('mode-offline') ? 'offline-setup' :
-                 card.classList.contains('mode-online') ? 'online' : null;
-  if (!target) return;
-  event.preventDefault();
-  document.querySelectorAll('.screen').forEach(function(screen) {
-    screen.classList.remove('active');
-  });
-  const next = document.getElementById('screen-' + target);
-  if (!next) {
-    alert('Не найден экран: ' + target);
-    return;
-  }
-  next.classList.add('active');
-  if (target === 'offline-setup' && typeof renderPlayers === 'function') renderPlayers();
-}, true);
-</script>
+
 
 </body>
 </html>

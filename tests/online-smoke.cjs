@@ -5,8 +5,14 @@ const TIMEOUT = 20000;
 
 (async () => {
   const browser = await chromium.launch({ headless: true });
-  const hostContext = await browser.newContext();
-  const guestContext = await browser.newContext();
+  // Run the host on a phone-sized viewport and the guest on desktop.
+  const hostContext = await browser.newContext({
+    viewport: { width: 390, height: 844 },
+    deviceScaleFactor: 1,
+    isMobile: true,
+    hasTouch: true
+  });
+  const guestContext = await browser.newContext({ viewport: { width: 1280, height: 900 } });
   const host = await hostContext.newPage();
   const guest = await guestContext.newPage();
   const dialogs = [];
@@ -27,6 +33,16 @@ const TIMEOUT = 20000;
     await page.getByRole('button', { name: 'Играть онлайн' }).click();
   }
 
+  async function assertNoHorizontalOverflow(page, label) {
+    const dimensions = await page.evaluate(() => ({
+      viewport: document.documentElement.clientWidth,
+      content: document.documentElement.scrollWidth
+    }));
+    if (dimensions.content > dimensions.viewport + 2) {
+      throw new Error('Horizontal overflow on mobile at ' + label + ': ' + JSON.stringify(dimensions));
+    }
+  }
+
   async function cleanup(page) {
     try {
       if (await page.locator('#online-hud-leave').isVisible()) {
@@ -42,6 +58,7 @@ const TIMEOUT = 20000;
     await host.locator('#online-host-name').fill('CI Host');
     await host.getByRole('button', { name: 'Создать', exact: true }).click();
     await host.locator('#screen-online-lobby.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'host lobby');
     const code = (await host.locator('#online-room-code').innerText()).trim();
     if (!/^\d{5}$/.test(code)) throw new Error('Host received invalid room code: ' + code);
 
@@ -158,20 +175,24 @@ const TIMEOUT = 20000;
 
     await host.locator('#screen-online-pass.active').waitFor();
     await guest.locator('#screen-online-pass.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'pass screen');
     await host.locator('#online-show-word-btn').click();
     await host.locator('#screen-online-word.active').waitFor();
     await guest.locator('#screen-online-word.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'word screen');
     await guest.waitForFunction(() => document.querySelector('#screen-online-word.active #online-the-word')?.textContent.trim() === '???');
     const word = (await host.locator('#online-the-word').innerText()).trim();
     if (!word || word === '???') throw new Error('Host did not receive a real word');
 
     await host.locator('#screen-online-word .btn-primary').click();
     await host.locator('#screen-online-guess.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'guess screen');
     // Only the current explainer sees the guess buttons; the other player sees the pass screen.
     await guest.locator('#screen-online-pass.active').waitFor();
     await host.getByRole('button', { name: 'CI Guest', exact: true }).click();
     await host.locator('#screen-online-result.active').waitFor();
     await guest.locator('#screen-online-result.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'result screen');
     await host.getByRole('button', { name: 'Следующий ход' }).click();
     await host.locator('#screen-online-pass.active').waitFor();
     await guest.locator('#screen-online-pass.active').waitFor();
@@ -188,6 +209,7 @@ const TIMEOUT = 20000;
     await host.locator('.online-finish-inline:visible').first().click();
     await host.locator('#screen-online-finish.active').waitFor();
     await guest.locator('#screen-online-finish.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'finish screen');
     await host.locator('#online-rematch-btn').click();
     await host.locator('#screen-online-pass.active').waitFor();
     await guest.locator('#screen-online-pass.active').waitFor();

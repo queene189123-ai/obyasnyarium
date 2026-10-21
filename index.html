@@ -511,6 +511,12 @@ body {
   .btn,.screen.active { animation:none; transition:none; }
 }
 
+/* Главные кнопки чуть ниже — удобнее нажимать большим пальцем */
+#screen-home .title { margin-bottom: 72px; }
+@media (max-height: 760px) {
+  #screen-home .title { margin-bottom: 54px; }
+}
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>

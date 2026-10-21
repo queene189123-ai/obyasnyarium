@@ -74,6 +74,8 @@ jobs:
               "let onlineVisibilityHandler = null;",
               "let onlineNetworkHandlersInstalled = false;",
               "if(!onlineNetworkHandlersInstalled){",
+              "Leaving the screen must not hang while waiting for a flaky network.",
+              "supabaseClient.rpc('leave_room', {",
               "A response from an old room/session must never affect the current screen.",
               "requestPlayerToken=online.playerToken",
               "requestPlayerToken!==online.playerToken",

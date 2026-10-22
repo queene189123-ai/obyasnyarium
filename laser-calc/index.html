@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>LaserCost — калькулятор лазерной резки</title>
+<meta name="description" content="Расчёт длины реза, машинного времени и стоимости лазерной резки по DXF-раскладке.">
+<style>
+:root{color-scheme:dark;--bg:#101318;--panel:#191e26;--panel2:#202733;--line:#303947;--text:#f1f5f9;--muted:#9ba8b8;--accent:#ff765f;--blue:#8baeff;--good:#7bd9b0}
+*{box-sizing:border-box}body{margin:0;background:var(--bg);color:var(--text);font:15px/1.5 Inter,ui-sans-serif,system-ui,-apple-system,sans-serif}button,input,select{font:inherit}button{cursor:pointer}.wrap{max-width:1240px;margin:auto;padding:28px 20px 60px}.top{display:flex;justify-content:space-between;gap:20px;align-items:center;margin-bottom:30px}.brand{display:flex;gap:12px;align-items:center}.logo{width:42px;height:42px;border-radius:13px;background:var(--accent);display:grid;place-items:center;color:#15171b;font-weight:900;font-size:20px}.brand h1{font-size:20px;margin:0}.brand p{margin:2px 0 0;color:var(--muted);font-size:12px}.pill{border:1px solid var(--line);border-radius:99px;padding:7px 12px;color:var(--muted);font-size:12px}.hero{margin-bottom:24px}.hero h2{font-size:clamp(25px,4vw,38px);line-height:1.1;letter-spacing:-1px;margin:0 0 10px}.hero p{color:var(--muted);max-width:760px;margin:0}.layout{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(340px,.9fr);gap:18px}.panel{background:var(--panel);border:1px solid var(--line);border-radius:18px;padding:20px;min-width:0}.panel h3{margin:0 0 16px;font-size:16px}.upload{border:1px dashed #526074;border-radius:14px;padding:25px 18px;text-align:center;background:#151a21;transition:.2s}.upload.drag{border-color:var(--accent);background:#241d20}.upload .symbol{font-size:28px;color:var(--accent)}.upload strong{display:block;margin:7px 0 3px}.upload p{margin:0 0 14px;color:var(--muted);font-size:13px}.btn{border:0;background:var(--accent);color:#1c1717;font-weight:750;border-radius:10px;padding:10px 15px}.btn.secondary{background:var(--panel2);border:1px solid var(--line);color:var(--text)}.filename{margin-top:10px;color:var(--good);font-size:13px;overflow-wrap:anywhere}.grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:13px;margin-top:20px}.field{display:flex;flex-direction:column;gap:6px}.field label{font-size:12px;color:var(--muted)}.field input,.field select{width:100%;min-width:0;border:1px solid var(--line);border-radius:10px;padding:10px 11px;background:#11161c;color:var(--text);outline:none}.field input:focus,.field select:focus{border-color:var(--blue)}.full{grid-column:1/-1}.switchrow{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:13px 0;border-bottom:1px solid var(--line)}.switchrow:last-child{border:0}.switchrow small{display:block;color:var(--muted);font-size:12px;margin-top:2px}.switch{width:42px;height:24px;appearance:none;border-radius:20px;background:#414b59;position:relative;flex-shrink:0;cursor:pointer}.switch:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;border-radius:50%;background:white;transition:.18s}.switch:checked{background:var(--accent)}.switch:checked:before{transform:translateX(18px)}.muted{color:var(--muted)}.section{margin-top:20px}.run{width:100%;margin-top:18px;padding:13px}.rightstack{display:flex;flex-direction:column;gap:18px}.preview{height:230px;background:#11161c;border:1px solid var(--line);border-radius:12px;display:grid;place-items:center;overflow:hidden;position:relative}.preview svg{width:100%;height:100%}.preview .empty{color:var(--muted);text-align:center;padding:20px;font-size:13px}.stats{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}.stat{background:var(--panel2);border-radius:12px;padding:14px}.stat span{display:block;color:var(--muted);font-size:12px}.stat strong{display:block;font-size:22px;letter-spacing:-.5px;margin-top:3px;overflow-wrap:anywhere}.results{margin-top:14px;border-top:1px solid var(--line);padding-top:12px}.resultrow{display:flex;justify-content:space-between;gap:12px;padding:7px 0;font-size:13px}.resultrow span:first-child{color:var(--muted)}.total{background:#2a2225;border:1px solid #593c3d;border-radius:14px;padding:16px;margin-top:13px}.total span{font-size:12px;color:#e6b4ac}.total strong{display:block;font-size:30px;letter-spacing:-1px}.note{font-size:12px;color:var(--muted);margin:14px 0 0}.warning{background:#2a271e;border:1px solid #5b5030;color:#e8d8a4;padding:12px;border-radius:10px;font-size:12px;margin-top:14px}.hidden{display:none!important}.foot{margin-top:24px;color:var(--muted);font-size:12px;text-align:center}.fileinput{display:none}@media(max-width:820px){.layout{grid-template-columns:1fr}.top{align-items:flex-start}.pill{display:none}.wrap{padding:20px 14px 40px}.panel{padding:16px}}@media(max-width:420px){.grid{grid-template-columns:1fr}.full{grid-column:auto}.stats{grid-template-columns:1fr 1fr}.stat strong{font-size:19px}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top"><div class="brand"><div class="logo">L</div><div><h1>LaserCost</h1><p>Калькулятор лазерной резки</p></div></div><div class="pill">MVP · локальный расчёт в браузере</div></header>
+<section class="hero"><h2>Стоимость резки —<br>из вашей DXF-раскладки</h2><p>Загрузите файл, выберите материал, толщину и мощность лазера. Калькулятор проанализирует геометрию и оценит время обработки и стоимость заказа.</p></section>
+<div class="layout">
+<section class="panel">
+<h3>01 / Раскладка и технология</h3>
+<div class="upload" id="drop"><div class="symbol">⇧</div><strong>Перетащите DXF-файл сюда</strong><p>Файл анализируется в вашем браузере и не отправляется на сервер.</p><button class="btn secondary" id="choose">Выбрать DXF</button><input class="fileinput" id="file" type="file" accept=".dxf"></div>
+<div class="filename" id="filename"></div>
+<div class="grid">
+<div class="field"><label for="material">Материал</label><select id="material"><option value="mild">Чёрная сталь</option><option value="stainless">Нержавеющая сталь</option><option value="aluminum">Алюминий</option></select></div>
+<div class="field"><label for="thickness">Толщина, мм</label><select id="thickness"><option>1</option><option>1.5</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option><option>8</option><option>10</option><option>12</option><option>16</option><option>20</option></select></div>
+<div class="field"><label for="power">Мощность лазера, кВт</label><select id="power"><option>1.5</option><option>2</option><option selected>3</option><option>4</option><option>6</option><option>8</option><option>12</option><option>20</option></select></div>
+<div class="field"><label for="gas">Вспомогательный газ</label><select id="gas"><option value="oxygen">Кислород</option><option value="nitrogen" selected>Азот</option><option value="air">Воздух</option></select></div>
+<div class="field"><label for="speed">Скорость резки, м/мин</label><input id="speed" type="number" min="0.1" step="0.1" value="10"></div>
+<div class="field"><label for="pierce">Среднее время прокола, сек</label><input id="pierce" type="number" min="0" step="0.1" value="0.8"></div>
+<div class="field"><label for="travel">Средняя скорость холостого хода, м/мин</label><input id="travel" type="number" min="1" step="1" value="60"></div>
+<div class="field"><label for="hourly">Стоимость машинного часа, ₽</label><input id="hourly" type="number" min="0" step="100" value="3000"></div>
+<div class="field"><label for="sheetPrice">Стоимость листа, ₽</label><input id="sheetPrice" type="number" min="0" step="100" value="5000"></div>
+<div class="field"><label for="extra">Запас на динамику и задержки, %</label><input id="extra" type="number" min="0" max="100" step="1" value="15"></div>
+</div>
+<div class="section">
+<div class="switchrow"><div><strong>Учитывать стоимость металла</strong><small>Выключите, если материал предоставляет заказчик</small></div><input class="switch" id="includeMaterial" type="checkbox" checked></div>
+<div class="switchrow"><div><strong>Автоподбор скорости по таблице</strong><small>Пока используется стартовая таблица-пример; проверьте режимы перед расчётом</small></div><input class="switch" id="autoSpeed" type="checkbox"></div>
+</div>
+<button class="btn run" id="calculate">Рассчитать заказ</button>
+<p class="note">Таблица режимов и расчёт движения будут калиброваться по реальным данным станка. Не используйте предварительные результаты как производственную гарантию.</p>
+</section>
+<div class="rightstack">
+<section class="panel"><h3>02 / Геометрия раскладки</h3><div class="preview" id="preview"><div class="empty">После загрузки DXF здесь появится предпросмотр раскладки</div></div><div class="stats" style="margin-top:12px"><div class="stat"><span>Длина реза</span><strong id="length">—</strong></div><div class="stat"><span>Объекты DXF</span><strong id="entities">—</strong></div><div class="stat"><span>Замкнутые контуры</span><strong id="contours">—</strong></div><div class="stat"><span>Потенциальные проколы</span><strong id="pierces">—</strong></div></div><div class="warning" id="geomWarning">Важно: количество контуров — предварительная оценка количества проколов. Точные точки врезки и траектория холостых перемещений обычно задаются в CAM, а не в обычном DXF.</div></section>
+<section class="panel"><h3>03 / Предварительная калькуляция</h3><div class="stats"><div class="stat"><span>Чистое время резки</span><strong id="cutTime">—</strong></div><div class="stat"><span>Проколы и задержки</span><strong id="auxTime">—</strong></div><div class="stat"><span>Холостой ход (оценка)</span><strong id="travelTime">—</strong></div><div class="stat"><span>Полное время</span><strong id="totalTime">—</strong></div></div><div class="results"><div class="resultrow"><span>Обработка</span><strong id="processCost">—</strong></div><div class="resultrow"><span>Материал</span><strong id="materialCost">—</strong></div></div><div class="total"><span>ИТОГО, ₽</span><strong id="totalCost">—</strong></div><p class="note" id="resultNote">Загрузите DXF и нажмите «Рассчитать заказ».</p></section>
+</div>
+</div>
+<div class="foot">LaserCost · прототип калькулятора · режимы резки требуют проверки и калибровки</div>
+</div>
+<script src="https://cdn.jsdelivr.net/npm/dxf-parser@1.1.2/dist/dxf-parser.min.js"></script>
+<script>
+const $=id=>document.getElementById(id);let drawing=null,analysis=null;
+const num=id=>Math.max(0,Number($(id).value)||0);
+const fmt=(v,d=2)=>new Intl.NumberFormat('ru-RU',{maximumFractionDigits:d}).format(v);
+const money=v=>new Intl.NumberFormat('ru-RU',{style:'currency',currency:'RUB',maximumFractionDigits:0}).format(v);
+$('choose').onclick=()=>$('file').click();
+$('file').addEventListener('change',e=>{if(e.target.files[0])loadFile(e.target.files[0])});
+const drop=$('drop');['dragenter','dragover'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.add('drag')}));
+['dragleave','drop'].forEach(n=>drop.addEventListener(n,e=>{e.preventDefault();drop.classList.remove('drag')}));
+drop.addEventListener('drop',e=>{const f=e.dataTransfer.files[0];if(f)loadFile(f)});
+async function loadFile(file){
+ if(!file.name.toLowerCase().endsWith('.dxf')){alert('Пожалуйста, выберите файл .dxf');return}
+ $('filename').textContent='Загружен: '+file.name;
+ try{
+  const text=await file.text();
+  if(!window.DxfParser)throw new Error('Библиотека чтения DXF не загрузилась. Проверьте интернет-соединение и обновите страницу.');
+  const parser=new DxfParser();drawing=parser.parseSync(text);analysis=analyze(drawing);
+  renderPreview(analysis);
+  $('length').textContent=fmt(analysis.length/1000)+' м';
+  $('entities').textContent=fmt(analysis.count,0);
+  $('contours').textContent=fmt(analysis.closed,0);
+  $('pierces').textContent=fmt(analysis.pierces,0);
+  $('resultNote').textContent='Геометрия прочитана. Проверьте единицы DXF, толщину и режимы перед расчётом.';
+ }catch(err){drawing=null;analysis=null;$('preview').innerHTML='<div class="empty">Не удалось прочитать DXF: '+escapeHtml(err.message)+'</div>';alert('Ошибка DXF: '+err.message)}
+}
+function analyze(doc){
+ const ents=doc.entities||[];let length=0,closed=0,open=0,points=[],segments=0;
+ const addPoint=p=>{if(p&&Number.isFinite(p.x)&&Number.isFinite(p.y))points.push({x:p.x,y:p.y})};
+ for(const e of ents){
+  const type=(e.type||'').toUpperCase();
+  if(type==='LINE'){length+=dist(e.vertices?.[0],e.vertices?.[1]);addPoint(e.vertices?.[0]);addPoint(e.vertices?.[1]);segments++}
+  else if(type==='CIRCLE'){const r=e.radius||0;length+=2*Math.PI*r;closed++;addPoint({x:e.center.x-r,y:e.center.y-r});addPoint({x:e.center.x+r,y:e.center.y+r});segments++}
+  else if(type==='ARC'){const a1=e.startAngle||0,a2=e.endAngle||0;let da=a2-a1;if(da<0)da+=Math.PI*2;length+=(e.radius||0)*da;addPoint({x:e.center.x-e.radius,y:e.center.y-e.radius});addPoint({x:e.center.x+e.radius,y:e.center.y+e.radius});segments++}
+  else if(type==='LWPOLYLINE'||type==='POLYLINE'){
+   const vs=e.vertices||[];if(vs.length<2)continue;
+   const isClosed=!!(e.shape||e.closed||(e.flags&1));if(isClosed)closed++;else open++;
+   for(let i=0;i<vs.length-1;i++){length+=dist(vs[i],vs[i+1]);segments++}
+   if(isClosed){length+=dist(vs[vs.length-1],vs[0]);segments++}
+   vs.forEach(addPoint);
+  }else if(type==='SPLINE'){
+   const vs=e.controlPoints||e.fitPoints||[];for(let i=0;i<vs.length-1;i++){length+=dist(vs[i],vs[i+1]);segments++}vs.forEach(addPoint);if(vs.length>1)open++;
+  }else if(type==='ELLIPSE'){
+   const a=e.majorAxisEndPoint||{x:0,y:0},rx=Math.hypot(a.x,a.y),ry=rx*Math.sqrt(Math.max(0,1-(e.axisRatio||1)**2));length+=Math.PI*(3*(rx+ry)-Math.sqrt(Math.max(0,(3*rx+ry)*(rx+3*ry))));closed++;segments++;
+  }
+ }
+ let minX=0,minY=0,maxX=1,maxY=1;
+ if(points.length){minX=Math.min(...points.map(p=>p.x));maxX=Math.max(...points.map(p=>p.x));minY=Math.min(...points.map(p=>p.y));maxY=Math.max(...points.map(p=>p.y))}
+ return {length,count:ents.length,closed,open,pierces:closed+open,points,minX,minY,maxX,maxY,segments};
+}
+function dist(a,b){if(!a||!b)return 0;return Math.hypot((b.x||0)-(a.x||0),(b.y||0)-(a.y||0))}
+function renderPreview(a){
+ const w=800,h=420,pad=30,dx=Math.max(a.maxX-a.minX,1),dy=Math.max(a.maxY-a.minY,1),scale=Math.min((w-2*pad)/dx,(h-2*pad)/dy);
+ const sx=x=>pad+(x-a.minX)*scale,sy=y=>h-pad-(y-a.minY)*scale;
+ let shapes='';
+ for(const e of (drawing.entities||[])){
+  const t=(e.type||'').toUpperCase();
+  if(t==='LINE'){const v=e.vertices||[];if(v.length>=2)shapes+=line(v[0],v[1])}
+  else if(t==='LWPOLYLINE'||t==='POLYLINE'){const v=e.vertices||[];if(v.length>1){shapes+='<polyline points="'+v.map(p=>sx(p.x)+','+sy(p.y)).join(' ')+'" '+((e.shape||e.closed||(e.flags&1))?'fill="none"':'fill="none')+' stroke="#ff765f" stroke-width="1.6"/>';if(e.shape||e.closed||(e.flags&1))shapes+='<line x1="'+sx(v[v.length-1].x)+'" y1="'+sy(v[v.length-1].y)+'" x2="'+sx(v[0].x)+'" y2="'+sy(v[0].y)+'" stroke="#ff765f" stroke-width="1.6"/>'}}
+  else if(t==='CIRCLE')shapes+='<circle cx="'+sx(e.center.x)+'" cy="'+sy(e.center.y)+'" r="'+Math.max(1,e.radius*scale)+'" fill="none" stroke="#8baeff" stroke-width="1.5"/>';
+  else if(t==='ARC'){let st=e.startAngle||0,en=e.endAngle||0;if(en<st)en+=Math.PI*2;let n=Math.max(6,Math.ceil((en-st)*12)),pts=[];for(let i=0;i<=n;i++){let q=st+(en-st)*i/n;pts.push(sx(e.center.x+e.radius*Math.cos(q))+','+sy(e.center.y+e.radius*Math.sin(q)))}shapes+='<polyline points="'+pts.join(' ')+'" fill="none" stroke="#8baeff" stroke-width="1.5"/>'}
+ }
+ function line(a,b){return '<line x1="'+sx(a.x)+'" y1="'+sy(a.y)+'" x2="'+sx(b.x)+'" y2="'+sy(b.y)+'" stroke="#ff765f" stroke-width="1.6"/>'}
+ $('preview').innerHTML='<svg viewBox="0 0 '+w+' '+h+'" role="img" aria-label="Предпросмотр DXF">'+shapes+'</svg>';
+}
+function escapeHtml(s){return String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]))}
+const speedTable={
+ mild:{oxygen:{1:18,1.5:15,2:12,3:8,4:5,5:3.5,6:2.5,8:1.6,10:1.2,12:.8,16:.55,20:.35},nitrogen:{1:15,1.5:12,2:9,3:5,4:3,5:2,6:1.4,8:.8,10:.5}},
+ stainless:{nitrogen:{1:18,1.5:14,2:10,3:6,4:4,5:2.8,6:2,8:1.2,10:.8,12:.5},air:{1:10,1.5:7,2:5,3:3,4:2,5:1.3,6:.9}},
+ aluminum:{nitrogen:{1:15,1.5:11,2:8,3:4.5,4:3,5:2,6:1.4,8:.8},air:{1:8,1.5:5,2:3.5,3:2,4:1.3,5:.8}}
+};
+function updateAutoSpeed(){
+ const mat=$('material').value,gas=$('gas').value,t=Number($('thickness').value),p=Number($('power').value);
+ const row=speedTable[mat]?.[gas];if(!row)return;
+ const ts=Object.keys(row).map(Number).sort((a,b)=>a-b);let nearest=ts.reduce((best,x)=>Math.abs(x-t)<Math.abs(best-t)?x:best,ts[0]);
+ // This is a clearly labelled seed estimate, not a validated process recipe.
+ $('speed').value=fmt(row[nearest]*Math.sqrt(p/3),1).replace(/\s/g,'').replace(',','.');
+}
+$('autoSpeed').addEventListener('change',()=>{if($('autoSpeed').checked)updateAutoSpeed()});
+['material','gas','thickness','power'].forEach(id=>$(id).addEventListener('change',()=>{if($('autoSpeed').checked)updateAutoSpeed()}));
+$('calculate').onclick=()=>{
+ if(!analysis){alert('Сначала загрузите DXF-файл.');return}
+ const speed=num('speed'),travel=num('travel'),pierce=num('pierce'),hourly=num('hourly'),extra=num('extra');
+ if(speed<=0||travel<=0){alert('Скорость резки и скорость холостого хода должны быть больше нуля.');return}
+ const cutMin=(analysis.length/1000)/speed;
+ const pierceMin=analysis.pierces*pierce/60;
+ // DXF generally does not provide CAM toolpath order; this travel figure is a transparent heuristic based on bounding-box span and contour count.
+ const span=Math.hypot(analysis.maxX-analysis.minX,analysis.maxY-analysis.minY)/1000;
+ const travelM=Math.max(0,Math.min(span*analysis.pierces*.35,span*analysis.pierces));
+ const travelMin=travelM/travel;
+ const baseMin=cutMin+pierceMin+travelMin;
+ const totalMin=baseMin*(1+extra/100);
+ const process=totalMin/60*hourly;
+ const material=$('includeMaterial').checked?num('sheetPrice'):0;
+ $('cutTime').textContent=fmt(cutMin)+' мин';
+ $('auxTime').textContent=fmt(pierceMin)+' мин';
+ $('travelTime').textContent=fmt(travelMin)+' мин';
+ $('totalTime').textContent=fmt(totalMin)+' мин';
+ $('processCost').textContent=money(process);
+ $('materialCost').textContent=$('includeMaterial').checked?money(material):'Не учитывается';
+ $('totalCost').textContent=money(process+material);
+ $('resultNote').textContent='Оценка, не CAM-симуляция. Холостой ход оценён эвристически; длина реза дана в единицах DXF, предполагаемых как миллиметры. Проверьте масштаб файла и режимы.';
+};
+</script>
+</body></html>

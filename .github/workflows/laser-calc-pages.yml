@@ -1,0 +1,23 @@
+name: Publish LaserCalc preview
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'laser-calc/**'
+      - '.github/workflows/laser-calc-pages.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Publish preview to GitHub Pages branch
+        uses: peaceiris/actions-gh-pages@v4
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./laser-calc
+          publish_branch: gh-pages
+          commit_message: 'Deploy LaserCalc preview'

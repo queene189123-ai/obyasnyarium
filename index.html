@@ -410,6 +410,24 @@ window.addEventListener('load', () => {
 function trackAnalyticsEvent(eventName) {
   if (typeof window.gtag === 'function') window.gtag('event', eventName);
 }
+async function shareSite() {
+  const url='https://obyasnyarium.ru/';
+  const title='Объясняриум — игра для компании';
+  const text='Залетай в «Объясняриум» — объясняйте слова, используя только одну букву! Играть можно прямо в браузере.';
+  trackAnalyticsEvent('invite_friends_click');
+  try {
+    if (navigator.share) {
+      await navigator.share({title,text,url});
+    } else if (navigator.clipboard && window.isSecureContext) {
+      await navigator.clipboard.writeText(text+'\\n'+url);
+      alert('Ссылка скопирована! Отправь её друзьям.');
+    } else {
+      window.prompt('Скопируй ссылку и отправь друзьям:',url);
+    }
+  } catch(e) {
+    if (e.name !== 'AbortError') window.prompt('Скопируй ссылку и отправь друзьям:',url);
+  }
+}
 </script>
 </head>
 <body>
@@ -422,11 +440,17 @@ function trackAnalyticsEvent(eventName) {
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
+  <button class="btn btn-secondary" onclick="shareSite()">📨 Позвать друзей</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
 <div class="telegram-feedback">
   <div class="telegram-feedback-title">💜 Давайте держать связь!</div>
   <div class="telegram-feedback-text">Есть идея, нашли ошибку или хотите предложить улучшение? Будем рады вашей обратной связи.</div>
-  <a class="telegram-feedback-link" href="https://t.me/obyasnyarium" target="_blank" rel="noopener noreferrer">Написать нам в Telegram ↗</a>
+  <a class="telegram-feedback-link" href="https://t.me/obyasnyarium" target="_blank" rel="noopener noreferrer" onclick="trackAnalyticsEvent('telegram_feedback_click')">Написать нам в Telegram ↗</a>
+</div>
+<div class="telegram-feedback">
+  <div class="telegram-feedback-title">🤝 Сотрудничество и реклама</div>
+  <div class="telegram-feedback-text">Хотите предложить партнёрство или разместить рекламу на сайте? Свяжитесь с нами через Telegram.</div>
+  <a class="telegram-feedback-link" href="https://t.me/obyasnyarium" target="_blank" rel="noopener noreferrer" onclick="trackAnalyticsEvent('partnership_click')">Обсудить сотрудничество ↗</a>
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
@@ -1108,6 +1132,7 @@ function renderPlayers() {
 // ===== ОФЛАЙН: ИГРА =====
 function startOffline() {
   if (state.players.length < 2) return;
+  trackAnalyticsEvent('offline_game_start');
   state.currentIdx = 0;
   state.round = 1;
   Object.keys(state.scores).forEach(k => state.scores[k] = 0);

@@ -1700,7 +1700,7 @@ async function onlineStartGame(){
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
   online.state.players.forEach(p=>p.score=0);
   if(!await onlineSave()){if(!online.lastSaveConflict)online.state=previousState;online.lastSaveConflict=false;onlineRenderState();}
-  else trackAnalyticsEvent('game_start');
+  else trackAnalyticsEvent('game_start', { game_mode: 'online', player_count: getOnlinePlayers().length });
 }
 
 function onlineRenderState(){

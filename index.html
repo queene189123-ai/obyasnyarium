@@ -374,6 +374,14 @@ window.addEventListener('load', () => {
   if(restoreOfflineOnReload && !roomCode) restoreOfflineGame();
 });
 </script>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-NYFZG0XMKP"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-NYFZG0XMKP');
+</script>
 </head>
 <body>
 <div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>

@@ -49,8 +49,7 @@ body {
   overscroll-behavior-y: none;
   -webkit-font-smoothing: antialiased;
 }
-.ad-slot { display:none; width:min(100%, 720px); min-height:0; margin:18px auto 0; }
-.ad-slot.is-enabled { display:block; min-height:90px; }
+
 .site-legal-links { margin-top:14px; font-size:12px; }
 .site-legal-links a { color:var(--muted); text-decoration:underline; text-underline-offset:3px; }
 .screen { display: none; min-height: 100vh; min-height: 100dvh; padding: max(24px, env(safe-area-inset-top)) 24px max(24px, env(safe-area-inset-bottom)); flex-direction: column; align-items: center; justify-content: center; }
@@ -387,33 +386,7 @@ window.addEventListener('load', () => {
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
-  <!-- Рекламный блок Adsterra 320x50; adult ads отключены в кабинете. -->
-  <div class="ad-slot is-enabled" data-ad-slot="home" aria-label="Реклама" style="width:min(100%, 320px); min-height:50px; margin:18px auto 0;">
-    <script>
-      atOptions = {
-        'key' : 'd82f9feeda36429144245f5d94610438',
-        'format' : 'iframe',
-        'height' : 50,
-        'width' : 320,
-        'params' : {}
-      };
-    </script>
-    <script src="https://bauval.org/22/d82f9feeda36429144245f5d94610438"></script>
-  </div>
-  <!-- Второй рекламный блок Adsterra 300x250; adult ads отключены в кабинете. -->
-  <div class="ad-slot is-enabled" data-ad-slot="home-rectangle" aria-label="Реклама" style="width:min(100%, 300px); min-height:250px; margin:18px auto 0;">
-    <script>
-      atOptions = {
-        'key' : '8be3d111757556cba452cab295e696ac',
-        'format' : 'iframe',
-        'height' : 250,
-        'width' : 300,
-        'params' : {}
-      };
-    </script>
-    <script src="https://bauval.org/22/8be3d111757556cba452cab295e696ac"></script>
-  </div>
-  <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
+<div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
 
 <!-- ОФЛАЙН: ВВОД ИМЁН -->
@@ -1764,9 +1737,5 @@ async function onlineLeaveRoom(){
 }
 
 </script>
-
-<!-- Yandex Autoplacement 20264514 -->
-<script src="https://yandex.ru/ads/system/context.js" async></script>
-<script data-page-id="20264514" src="https://yandex.ru/ads/system/ap-loader.js" async></script>
 </body>
 </html>

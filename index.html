@@ -1134,7 +1134,8 @@ function renderPlayers() {
 // ===== ОФЛАЙН: ИГРА =====
 function startOffline() {
   if (state.players.length < 2) return;
-  trackAnalyticsEvent('offline_game_start');
+  trackAnalyticsEvent('offline_game_start', { player_count: state.players.length });
+  trackAnalyticsEvent('game_start', { game_mode: 'offline', player_count: state.players.length });
   state.currentIdx = 0;
   state.round = 1;
   Object.keys(state.scores).forEach(k => state.scores[k] = 0);
@@ -1225,6 +1226,7 @@ function showScoreboard() {
 function endGame() {
   stopGameTimer();
   trackAnalyticsEvent('offline_game_finish', { player_count: state.players.length, rounds_played: state.round });
+  trackAnalyticsEvent('game_finish', { game_mode: 'offline', player_count: state.players.length, rounds_played: state.round });
   const board = document.getElementById('offline-finish-board');
   board.innerHTML = '';
   [...state.players].sort((a,b) => state.scores[b] - state.scores[a]).forEach((name, i) => {
@@ -1600,6 +1602,7 @@ async function onlineFinishGame(){
     return;
   }
   trackAnalyticsEvent('online_game_finish', { player_count: getOnlinePlayers().length });
+  trackAnalyticsEvent('game_finish', { game_mode: 'online', player_count: getOnlinePlayers().length, rounds_played: online.state.round });
   onlineRenderState();
 }
 function renderOnlineFinish(){

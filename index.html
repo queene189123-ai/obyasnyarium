@@ -411,6 +411,15 @@ window.addEventListener('load', () => {
 function trackAnalyticsEvent(eventName, parameters = {}) {
   if (typeof window.gtag === 'function') window.gtag('event', eventName, parameters);
 }
+function trackGameStart(gameMode, playerCount) {
+  try {
+    if (sessionStorage.getItem('obyasnyarium_game_started') === '1') {
+      trackAnalyticsEvent('game_replay', { game_mode: gameMode, player_count: playerCount });
+    }
+    sessionStorage.setItem('obyasnyarium_game_started', '1');
+  } catch (e) {}
+  trackAnalyticsEvent('game_start', { game_mode: gameMode, player_count: playerCount });
+}
 async function shareSite() {
   const url='https://obyasnyarium.ru/';
   const title='Объясняриум — игра для компании';
@@ -1135,7 +1144,7 @@ function renderPlayers() {
 function startOffline() {
   if (state.players.length < 2) return;
   trackAnalyticsEvent('offline_game_start', { player_count: state.players.length });
-  trackAnalyticsEvent('game_start', { game_mode: 'offline', player_count: state.players.length });
+  trackGameStart('offline', state.players.length);
   state.currentIdx = 0;
   state.round = 1;
   Object.keys(state.scores).forEach(k => state.scores[k] = 0);
@@ -1700,7 +1709,7 @@ async function onlineStartGame(){
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
   online.state.players.forEach(p=>p.score=0);
   if(!await onlineSave()){if(!online.lastSaveConflict)online.state=previousState;online.lastSaveConflict=false;onlineRenderState();}
-  else trackAnalyticsEvent('game_start', { game_mode: 'online', player_count: getOnlinePlayers().length });
+  else trackGameStart('online', getOnlinePlayers().length);
 }
 
 function onlineRenderState(){

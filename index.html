@@ -352,6 +352,30 @@ body {
   .btn, .guess-btn { transition: none; }
 }
 
+
+/* Telegram feedback link on the home screen */
+.telegram-feedback {
+  width:100%;
+  max-width:360px;
+  margin:18px auto 0;
+  padding:15px 17px;
+  border:1px solid #e5defb;
+  border-radius:17px;
+  background:linear-gradient(135deg, rgba(255,255,255,.96), rgba(244,240,255,.96));
+  box-shadow:0 6px 18px rgba(53,43,107,.06);
+  text-align:center;
+}
+.telegram-feedback-title { font-size:15px; font-weight:800; color:#5142b4; margin-bottom:5px; }
+.telegram-feedback-text { font-size:13px; line-height:1.45; color:var(--muted); margin-bottom:10px; }
+.telegram-feedback-link {
+  display:inline-flex; align-items:center; justify-content:center; gap:7px;
+  padding:9px 14px; border-radius:11px; background:#7161d8; color:#fff;
+  font-size:14px; font-weight:750; text-decoration:none;
+  transition:transform .15s ease, background .15s ease;
+}
+.telegram-feedback-link:active { transform:scale(.97); background:#5848bd; }
+@media (max-width:420px) { .telegram-feedback { margin-top:14px; padding:13px 14px; } }
+
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
@@ -399,6 +423,11 @@ function trackAnalyticsEvent(eventName) {
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
+<div class="telegram-feedback">
+  <div class="telegram-feedback-title">💜 Давайте держать связь!</div>
+  <div class="telegram-feedback-text">Есть идея, нашли ошибку или хотите предложить улучшение? Будем рады вашей обратной связи.</div>
+  <a class="telegram-feedback-link" href="https://t.me/obyasnyarium" target="_blank" rel="noopener noreferrer">Написать нам в Telegram ↗</a>
+</div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
 

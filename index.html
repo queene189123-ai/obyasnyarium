@@ -408,8 +408,8 @@ window.addEventListener('load', () => {
   gtag('config', 'G-NYFZG0XMKP');
 </script>
 <script>
-function trackAnalyticsEvent(eventName) {
-  if (typeof window.gtag === 'function') window.gtag('event', eventName);
+function trackAnalyticsEvent(eventName, parameters = {}) {
+  if (typeof window.gtag === 'function') window.gtag('event', eventName, parameters);
 }
 async function shareSite() {
   const url='https://obyasnyarium.ru/';
@@ -1224,6 +1224,7 @@ function showScoreboard() {
 
 function endGame() {
   stopGameTimer();
+  trackAnalyticsEvent('offline_game_finish', { player_count: state.players.length, rounds_played: state.round });
   const board = document.getElementById('offline-finish-board');
   board.innerHTML = '';
   [...state.players].sort((a,b) => state.scores[b] - state.scores[a]).forEach((name, i) => {
@@ -1598,6 +1599,7 @@ async function onlineFinishGame(){
     onlineRenderState();
     return;
   }
+  trackAnalyticsEvent('online_game_finish', { player_count: getOnlinePlayers().length });
   onlineRenderState();
 }
 function renderOnlineFinish(){
@@ -1644,6 +1646,7 @@ function launchConfetti(){
 }
 async function shareOnlineRoom(){
   if(!online.code)return;
+  trackAnalyticsEvent('online_invite_click');
   const link=location.origin+location.pathname+"?room="+encodeURIComponent(online.code);
   const inviteText="Заходи в «Объясняриум»! Код комнаты: "+online.code;
   const message=inviteText+"\\nСсылка для входа: "+link;

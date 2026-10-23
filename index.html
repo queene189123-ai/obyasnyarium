@@ -382,6 +382,11 @@ window.addEventListener('load', () => {
   gtag('js', new Date());
   gtag('config', 'G-NYFZG0XMKP');
 </script>
+<script>
+function trackAnalyticsEvent(eventName) {
+  if (typeof window.gtag === 'function') window.gtag('event', eventName);
+}
+</script>
 </head>
 <body>
 <div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
@@ -1228,6 +1233,7 @@ async function onlineCreateRoomInternal(){
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version ?? 0;
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+  trackAnalyticsEvent('create_room');
 }
 
 async function onlineJoinRoomInternal(){
@@ -1279,6 +1285,7 @@ async function onlineJoinRoomInternal(){
   // Remove the invitation parameter after a successful join so refreshing this tab restores the joined room.
   try { const cleanUrl=new URL(location.href); cleanUrl.searchParams.delete('room'); history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash); } catch(e) {}
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+  trackAnalyticsEvent('join_room');
 }
 
 let onlineEntryBusy = false;
@@ -1631,6 +1638,7 @@ async function onlineStartGame(){
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
   online.state.players.forEach(p=>p.score=0);
   if(!await onlineSave()){if(!online.lastSaveConflict)online.state=previousState;online.lastSaveConflict=false;onlineRenderState();}
+  else trackAnalyticsEvent('game_start');
 }
 
 function onlineRenderState(){

@@ -376,12 +376,19 @@ body {
 }
 .telegram-feedback-link:active { transform:scale(.97); background:#5848bd; }
 @media (max-width:420px) { .telegram-feedback { margin-top:14px; padding:13px 14px; } }
+#session-counter { max-width:360px; width:100%; margin:18px auto 0; padding:13px 15px; border:1px solid #e5defb; border-radius:14px; background:rgba(255,255,255,.78); color:var(--muted); font-size:12px; line-height:1.6; text-align:left; }
+#session-counter .counter-title { color:#5142b4; font-size:13px; font-weight:800; margin-bottom:5px; }
+#session-counter .counter-row { display:flex; justify-content:space-between; gap:12px; }
+#session-counter strong { color:var(--text); font-variant-numeric:tabular-nums; }
+#session-counter .counter-updated { margin-top:5px; font-size:10px; opacity:.75; text-align:right; }
 
 </style>
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 <script>
 window.addEventListener('load', () => {
   loadGameSettings();
+  refreshSessionCounter();
+  setInterval(refreshSessionCounter, 30000);
   const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");const nameInput=document.getElementById("online-join-name");if(nameInput)nameInput.focus();}
   const joinCodeInput=document.getElementById("online-join-code");if(joinCodeInput){joinCodeInput.addEventListener("input",()=>{joinCodeInput.value=joinCodeInput.value.replace(/\D/g,"").slice(0,5);});}
   let saved=null;
@@ -410,6 +417,37 @@ window.addEventListener('load', () => {
 <script>
 function trackAnalyticsEvent(eventName, parameters = {}) {
   if (typeof window.gtag === 'function') window.gtag('event', eventName, parameters);
+}
+const SESSION_COUNTER_KEY = 'obyasnyarium_counter_session';
+function newCounterId() {
+  try { return crypto.randomUUID(); } catch(e) { return String(Date.now()) + '-' + Math.random().toString(36).slice(2); }
+}
+function trackSessionCounterEvent(eventType, gameMode, eventKey) {
+  try {
+    supabaseClient.rpc('track_game_session_event', { p_event_type:eventType, p_game_mode:gameMode, p_event_key:eventKey })
+      .then(({error}) => { if (error) console.warn('Counter event failed', error.message); });
+  } catch(e) { console.warn('Counter event failed', e); }
+}
+function getCounterSessionId() {
+  try {
+    let id = sessionStorage.getItem(SESSION_COUNTER_KEY);
+    if (!id) { id = newCounterId(); sessionStorage.setItem(SESSION_COUNTER_KEY, id); }
+    return id;
+  } catch(e) { return newCounterId(); }
+}
+async function refreshSessionCounter() {
+  const root = document.getElementById('session-counter');
+  if (!root || !window.supabase || !window.supabase.createClient) return;
+  try {
+    const {data,error} = await supabaseClient.rpc('get_game_session_stats_today');
+    if (error || !data) return;
+    document.getElementById('counter-lobbies').textContent = data.lobbies_created ?? 0;
+    document.getElementById('counter-online-started').textContent = data.online_started ?? 0;
+    document.getElementById('counter-offline-started').textContent = data.offline_started ?? 0;
+    document.getElementById('counter-online-finished').textContent = data.online_finished ?? 0;
+    document.getElementById('counter-offline-finished').textContent = data.offline_finished ?? 0;
+    document.getElementById('counter-updated').textContent = 'Обновлено ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
+  } catch(e) { console.warn('Counter refresh failed', e); }
 }
 function trackGameStart(gameMode, playerCount) {
   try {
@@ -462,6 +500,15 @@ async function shareSite() {
   <div class="telegram-feedback-text">По вопросам рекламы и партнёрства пишите на почту.</div>
   <a class="telegram-feedback-link" href="mailto:obyas.business@gmail.com?subject=%D0%A1%D0%BE%D1%82%D1%80%D1%83%D0%B4%D0%BD%D0%B8%D1%87%D0%B5%D1%81%D1%82%D0%B2%D0%BE%20%D1%81%20%D0%9E%D0%B1%D1%8A%D1%8F%D1%81%D0%BD%D1%8F%D1%80%D0%B8%D1%83%D0%BC" onclick="trackAnalyticsEvent('partnership_email_click')">✉️ Написать по почте</a>
   <div class="telegram-feedback-text" style="margin-top:9px;margin-bottom:0"><a href="mailto:obyas.business@gmail.com" style="color:#6556bd">obyas.business@gmail.com</a></div>
+</div>
+<div id="session-counter" aria-label="Статистика игр за сегодня">
+  <div class="counter-title">📊 Объясняриум сегодня</div>
+  <div class="counter-row"><span>Онлайн-лобби создано</span><strong id="counter-lobbies">—</strong></div>
+  <div class="counter-row"><span>Онлайн-игр начато</span><strong id="counter-online-started">—</strong></div>
+  <div class="counter-row"><span>Офлайн-игр начато</span><strong id="counter-offline-started">—</strong></div>
+  <div class="counter-row"><span>Онлайн-игр завершено</span><strong id="counter-online-finished">—</strong></div>
+  <div class="counter-row"><span>Офлайн-игр завершено</span><strong id="counter-offline-finished">—</strong></div>
+  <div class="counter-updated" id="counter-updated">Загружаем статистику…</div>
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
@@ -1143,6 +1190,9 @@ function renderPlayers() {
 // ===== ОФЛАЙН: ИГРА =====
 function startOffline() {
   if (state.players.length < 2) return;
+  const counterSessionId = 'offline-' + newCounterId();
+  try { sessionStorage.setItem(SESSION_COUNTER_KEY, counterSessionId); } catch(e) {}
+  trackSessionCounterEvent('game_started', 'offline', 'started-' + counterSessionId);
   trackAnalyticsEvent('offline_game_start', { player_count: state.players.length });
   trackGameStart('offline', state.players.length);
   state.currentIdx = 0;
@@ -1234,6 +1284,7 @@ function showScoreboard() {
 
 function endGame() {
   stopGameTimer();
+  trackSessionCounterEvent('game_finished', 'offline', 'finished-' + getCounterSessionId());
   trackAnalyticsEvent('offline_game_finish', { player_count: state.players.length, rounds_played: state.round });
   trackAnalyticsEvent('game_finish', { game_mode: 'offline', player_count: state.players.length, rounds_played: state.round });
   const board = document.getElementById('offline-finish-board');
@@ -1301,6 +1352,7 @@ async function onlineCreateRoomInternal(){
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version ?? 0;
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
+  trackSessionCounterEvent('lobby_created', 'online', 'lobby-' + created.id);
   trackAnalyticsEvent('create_room');
 }
 
@@ -1610,6 +1662,7 @@ async function onlineFinishGame(){
     onlineRenderState();
     return;
   }
+  trackSessionCounterEvent('game_finished', 'online', 'finished-' + getCounterSessionId());
   trackAnalyticsEvent('online_game_finish', { player_count: getOnlinePlayers().length });
   trackAnalyticsEvent('game_finish', { game_mode: 'online', player_count: getOnlinePlayers().length, rounds_played: online.state.round });
   onlineRenderState();
@@ -1709,7 +1762,12 @@ async function onlineStartGame(){
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
   online.state.players.forEach(p=>p.score=0);
   if(!await onlineSave()){if(!online.lastSaveConflict)online.state=previousState;online.lastSaveConflict=false;onlineRenderState();}
-  else trackGameStart('online', getOnlinePlayers().length);
+  else {
+    const counterSessionId = 'online-' + online.roomId + '-' + newCounterId();
+    try { sessionStorage.setItem(SESSION_COUNTER_KEY, counterSessionId); } catch(e) {}
+    trackSessionCounterEvent('game_started', 'online', 'started-' + counterSessionId);
+    trackGameStart('online', getOnlinePlayers().length);
+  }
 }
 
 function onlineRenderState(){

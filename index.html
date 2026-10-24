@@ -442,10 +442,6 @@ async function refreshSessionCounter() {
     const {data,error} = await supabaseClient.rpc('get_game_session_stats_today');
     if (error || !data) return;
     document.getElementById('counter-lobbies').textContent = data.lobbies_created ?? 0;
-    document.getElementById('counter-online-started').textContent = data.online_started ?? 0;
-    document.getElementById('counter-offline-started').textContent = data.offline_started ?? 0;
-    document.getElementById('counter-online-finished').textContent = data.online_finished ?? 0;
-    document.getElementById('counter-offline-finished').textContent = data.offline_finished ?? 0;
     document.getElementById('counter-updated').textContent = 'Обновлено ' + new Date().toLocaleTimeString('ru-RU', {hour:'2-digit',minute:'2-digit'});
   } catch(e) { console.warn('Counter refresh failed', e); }
 }
@@ -504,10 +500,6 @@ async function shareSite() {
 <div id="session-counter" aria-label="Статистика игр за сегодня">
   <div class="counter-title">📊 Объясняриум сегодня</div>
   <div class="counter-row"><span>Онлайн-лобби создано</span><strong id="counter-lobbies">—</strong></div>
-  <div class="counter-row"><span>Онлайн-игр начато</span><strong id="counter-online-started">—</strong></div>
-  <div class="counter-row"><span>Офлайн-игр начато</span><strong id="counter-offline-started">—</strong></div>
-  <div class="counter-row"><span>Онлайн-игр завершено</span><strong id="counter-online-finished">—</strong></div>
-  <div class="counter-row"><span>Офлайн-игр завершено</span><strong id="counter-offline-finished">—</strong></div>
   <div class="counter-updated" id="counter-updated">Загружаем статистику…</div>
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>

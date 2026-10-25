@@ -255,6 +255,7 @@ body {
 .screen { padding-left: 20px; padding-right: 20px; }
 .title { letter-spacing: -1.4px; line-height: 1.08; }
 .subtitle { line-height: 1.55; max-width: 340px; }
+.home-how-to-play { max-width:340px; margin:-14px auto 22px; color:var(--muted); font-size:14px; line-height:1.45; text-align:center; }
 .btn {
   border-radius: 17px;
   font-weight: 700;
@@ -429,6 +430,7 @@ function trackSessionCounterEvent(eventType, gameMode, eventKey) {
   } catch(e) { console.warn('Counter event failed', e); }
 }
 function createOfflineLobby() {
+  trackAnalyticsEvent('offline_setup_open');
   trackSessionCounterEvent('lobby_created', 'offline', 'offline-lobby-' + newCounterId());
   go('offline-setup');
 }
@@ -486,8 +488,9 @@ async function shareSite() {
 <div class="screen active" id="screen-home">
   <img class="title-logo" src="logo.svg" alt="Объясняриум">
   <div class="subtitle">Продемонстрируй словарный запас и смекалку!</div>
-  <button class="btn btn-primary" onclick="createOfflineLobby()">Играть офлайн</button>
-  <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <div class="home-how-to-play">Игра для компании от 2 человек: объясняй слово с помощью одной буквы — остальные угадывают.</div>
+  <button class="btn btn-primary" onclick="trackAnalyticsEvent('mode_selected', {game_mode:'offline'}); createOfflineLobby()">Играть офлайн</button>
+  <button class="btn btn-secondary" onclick="trackAnalyticsEvent('mode_selected', {game_mode:'online'}); go('online')">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
 
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
@@ -570,9 +573,10 @@ async function shareSite() {
 <div class="screen" id="screen-online">
   <div class="title" style="font-size:32px">Онлайн-режим</div>
   <div class="subtitle">Играйте с разных телефонов</div>
+  <div class="small-text" style="margin:0 auto 20px;max-width:320px">Создай комнату и отправь ссылку друзьям. Начать можно, когда соберётся компания.</div>
   <div class="center-stack">
-    <button class="btn btn-primary" onclick="onlineCreateRoom()">Создать комнату</button>
-    <button class="btn btn-secondary" onclick="showOnlineJoin()">Войти в комнату</button>
+    <button class="btn btn-primary" onclick="trackAnalyticsEvent('online_create_open'); onlineCreateRoom()">Создать комнату</button>
+    <button class="btn btn-secondary" onclick="trackAnalyticsEvent('online_join_open'); showOnlineJoin()">Войти в комнату</button>
     <button class="btn btn-ghost" onclick="go('home')">← На главную</button>
   </div>
 </div>

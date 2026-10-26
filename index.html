@@ -735,6 +735,8 @@ async function shareSite() {
     <div class="word-label" id="public-text-round-label">Твой ход</div>
     <div class="word" id="public-text-answer"></div>
     <div class="letter-box" id="public-text-letter"></div>
+    <div class="reaction-hints" id="public-text-reaction-hints" aria-live="polite"></div>
+    <button class="btn btn-secondary" id="public-text-replace-btn" onclick="onlineTextReplaceWord()" style="display:none">Заменить слово ↻</button>
     <button class="btn btn-primary" id="public-text-start-btn" onclick="onlineTextStartRound()" style="display:none">Получить слово</button>
     <button class="btn btn-primary" id="public-text-next-btn" onclick="onlineTextNextRound()" style="display:none">Следующий раунд →</button>
   </div>
@@ -1438,10 +1440,12 @@ function renderPublicTextGame(){
   const letter=document.getElementById('public-text-letter');
   const start=document.getElementById('public-text-start-btn');
   const next=document.getElementById('public-text-next-btn');
+  const replace=document.getElementById('public-text-replace-btn');
+  const hints=document.getElementById('public-text-reaction-hints');
   const input=document.getElementById('public-text-message');
   const send=document.getElementById('public-text-send-btn');
   document.getElementById('public-text-scores').innerHTML=getOnlinePlayers().map(p=>'<div class="score-row"><span class="pname">'+escapeHtml(p.name)+'</span><span class="pscore">'+(p.score||0)+'</span></div>').join('');
-  start.style.display='none'; next.style.display='none'; input.style.display='block'; send.style.display='block';
+  start.style.display='none'; next.style.display='none'; replace.style.display='none'; hints.innerHTML=''; input.style.display='block'; send.style.display='block';
   if(s.status==='pass'){
     status.textContent='Комната готова. Ведущий начинает раунд.';
     label.textContent=isExplainer?'Твой ход':'Сейчас ходит '+(current?.name||'игрок');
@@ -1455,6 +1459,15 @@ function renderPublicTextGame(){
     letter.textContent=s.currentLetter||'';
     input.placeholder=isExplainer?'Напиши слово на букву '+(s.currentLetter||'…'):'Введи свой вариант ответа';
     input.disabled=false; send.disabled=false;
+    if(isExplainer){
+      replace.style.display='block';
+      (REACTION_HINTS[s.currentLetter]||[]).forEach((word,i)=>{
+        const card=document.createElement('div'); card.className='reaction-hint';
+        const labelEl=document.createElement('span'); labelEl.className='reaction-label'; labelEl.textContent=REACTION_LABELS[i];
+        const value=document.createElement('strong'); value.className='reaction-word'; value.textContent=word;
+        card.appendChild(labelEl); card.appendChild(value); hints.appendChild(card);
+      });
+    }
   }else if(s.status==='text_result'){
     const guesser=getOnlinePlayers().find(p=>p.id===s.selectedGuesserId);
     status.textContent=(guesser?.name||'Игрок')+' угадал слово!';
@@ -1476,6 +1489,19 @@ async function onlineTextStartRound(){
   online.state.text_mode=true;
   await onlineSave();
   await onlineTextLoadMessages(true);
+}
+async function onlineTextReplaceWord(){
+  if(online.saving || !online.state || online.state.status!=='word' ||
+     !online.state.text_mode || online.state.visibility!=='public' ||
+     onlineCurrentPlayer()?.id!==online.playerId) return;
+  const previousState=JSON.parse(JSON.stringify(online.state));
+  onlinePickWord(); // As in offline mode: new word and matching letter hints.
+  online.state.text_mode=true;
+  if(!await onlineSave()){
+    if(!online.lastSaveConflict) online.state=previousState;
+    online.lastSaveConflict=false;
+    onlineRenderState();
+  }
 }
 async function onlineTextNextRound(){
   if(onlineCurrentPlayer()?.id!==online.playerId || online.state?.status!=='text_result') return;

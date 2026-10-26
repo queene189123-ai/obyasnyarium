@@ -1656,6 +1656,11 @@ function onlinePrepareCreate(visibility){
   go('online-name');
 }
 async function listPublicRooms(){
+  if(publicRoomsRefreshTimer) clearInterval(publicRoomsRefreshTimer);
+  publicRoomsRefreshTimer=setInterval(()=>{
+    if(document.getElementById('screen-public-rooms')?.classList.contains('active')) listPublicRooms();
+    else { clearInterval(publicRoomsRefreshTimer); publicRoomsRefreshTimer=null; }
+  },10000);
   const box = document.getElementById('public-room-list');
   if(!box) return;
   box.innerHTML = '<p class="small-text">Ищем активные комнаты…</p>';
@@ -1692,11 +1697,6 @@ async function listPublicRooms(){
     row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter();}});
     box.appendChild(row);
   });
-  if(publicRoomsRefreshTimer) clearInterval(publicRoomsRefreshTimer);
-  publicRoomsRefreshTimer=setInterval(()=>{
-    if(document.getElementById('screen-public-rooms')?.classList.contains('active')) listPublicRooms();
-    else { clearInterval(publicRoomsRefreshTimer); publicRoomsRefreshTimer=null; }
-  },10000);
 }
 function makePlayerId(){ return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2); }
 function makeRoomCode(){ return String(Math.floor(10000 + Math.random()*90000)); }

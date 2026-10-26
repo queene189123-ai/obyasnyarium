@@ -505,6 +505,7 @@ async function shareSite() {
   
   <button class="btn btn-primary" onclick="createOfflineLobby()">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <button class="btn btn-ghost" onclick="go('rules')">Правила игры</button>
   <section class="global-chat" aria-label="Общий чат игроков">
     <div class="global-chat-heading">💬 Общий чат</div>
     <div class="global-chat-subtitle">Позови игроков: «Пойдёмте играть!»</div>
@@ -528,7 +529,7 @@ async function shareSite() {
     <div id="global-chat-status" class="global-chat-status" role="status"></div>
   </section>
 
-  <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
+
 <div class="telegram-feedback">
   <div class="telegram-feedback-title">💜 Давайте держать связь!</div>
   <div class="telegram-feedback-text">Есть идея, нашли ошибку или хотите предложить улучшение? Будем рады вашей обратной связи.</div>
@@ -545,6 +546,22 @@ async function shareSite() {
   <div class="counter-row"><span>Офлайн-лобби создано</span><strong id="counter-offline-lobbies">—</strong></div>
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
+</div>
+
+<!-- ПРАВИЛА ИГРЫ -->
+<div class="screen" id="screen-rules">
+  <div class="title" style="font-size:32px">Правила игры</div>
+  <div class="subtitle">Объясняй так, чтобы тебя поняли!</div>
+  <div class="center-stack" style="max-width:520px;width:100%;align-items:stretch">
+    <div class="scoreboard" style="padding:20px;text-align:left;line-height:1.55">
+      <p><strong>1. Получи слово и букву.</strong><br>В свой ход ты видишь загаданное слово и букву, с которой должны начинаться подсказки.</p>
+      <p style="margin-top:14px"><strong>2. Объясняй слово.</strong><br>Пиши подсказки, начинающиеся с нужной буквы. Не называй само загаданное слово.</p>
+      <p style="margin-top:14px"><strong>3. Остальные угадывают.</strong><br>Введи правильный ответ — и получишь очко вместе с объясняющим.</p>
+      <p style="margin-top:14px"><strong>4. Передавай ход.</strong><br>После правильного ответа начинается следующий раунд и объясняет другой игрок.</p>
+    </div>
+    <button class="btn btn-primary" onclick="go('home')">Понятно, играть!</button>
+    <button class="btn btn-ghost" onclick="go('home')">← На главную</button>
+  </div>
 </div>
 
 <!-- ОФЛАЙН: ВВОД ИМЁН -->

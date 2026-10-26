@@ -1451,7 +1451,7 @@ function renderOnlineLobby(){
     row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}${p.id===online.hostId?' 👑':''}</span><span class="pscore">${p.score||0}</span>`;
     box.appendChild(row);
   });
-  document.getElementById('online-start-btn').style.display=online.playerId===online.hostId?'block':'none';
+  document.getElementById('online-start-btn').style.display=online.playerId===online.hostId && getOnlinePlayers().length>=2?'block':'none';
 }
 
 async function onlineStartGame(){

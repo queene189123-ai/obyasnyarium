@@ -53,7 +53,7 @@ jobs:
       - name: Test online game in two isolated browsers
         run: |
           if [ "${{ github.event_name }}" = "pull_request" ]; then
-            BASE_URL=http://127.0.0.1:4173/ node tests/online-smoke.cjs
+            TEST_FIXED_ROOMS=1 BASE_URL=http://127.0.0.1:4173/ node tests/online-smoke.cjs
           else
             node tests/online-smoke.cjs
           fi

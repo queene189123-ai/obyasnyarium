@@ -165,6 +165,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
 .coming-soon-icon { font-size: 64px; margin-bottom: 16px; }
 .small-text { font-size: 14px; color: var(--muted); text-align: center; margin-top: 20px; line-height: 1.5; }
 
+.global-chat { width:100%; max-width:420px; margin:18px 0 4px; padding:16px; border:1px solid #eee1d4; border-radius:18px; background:rgba(255,255,255,.88); box-shadow:var(--shadow); text-align:left; }
+.global-chat-heading { font-size:18px; font-weight:750; text-align:center; }
+.global-chat-subtitle { color:var(--muted); font-size:12px; text-align:center; margin:4px 0 12px; }
+.global-chat-messages { display:flex; flex-direction:column; gap:8px; height:190px; overflow-y:auto; overscroll-behavior:contain; padding:10px; background:#fbf6ef; border-radius:12px; }
+.global-chat-message { font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+.global-chat-message strong { color:var(--accent-dark); margin-right:5px; }
+.global-chat-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:8px; margin-top:10px; }
+.global-chat-form .input { width:100%; min-width:0; margin:0; }
+.global-chat-form button { grid-column:1 / -1; margin:0; }
+.global-chat-status { min-height:16px; font-size:12px; color:var(--muted); text-align:center; margin-top:5px; }
+@media (max-width:420px) { .global-chat { padding:12px; } .global-chat-messages { height:165px; } }
+
 .word-screen { width:100%; max-width:360px; }
 .word { font-size:clamp(30px, 9vw, 48px); margin-bottom:20px; }
 .letter-box { margin-bottom:20px; }
@@ -333,6 +345,7 @@ body {
 <script>
 window.addEventListener('load', () => {
   loadGameSettings();
+  initGlobalChat();
   const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");}
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
@@ -359,6 +372,17 @@ window.addEventListener('load', () => {
   <div class="subtitle">Продемонстрируй словарный запас и смекалку!</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <section class="global-chat" aria-label="Общий чат игроков">
+    <div class="global-chat-heading">💬 Общий чат</div>
+    <div class="global-chat-subtitle">Позови игроков: «Пойдёмте играть!»</div>
+    <div id="global-chat-messages" class="global-chat-messages" aria-live="polite"><p class="small-text">Загружаем сообщения…</p></div>
+    <form class="global-chat-form" onsubmit="sendGlobalChatMessage(event)">
+      <input class="input" id="global-chat-name" placeholder="Твой ник" maxlength="20" autocomplete="nickname" aria-label="Твой ник">
+      <input class="input" id="global-chat-input" placeholder="Напиши сообщение…" maxlength="240" aria-label="Сообщение">
+      <button class="btn btn-primary" id="global-chat-send" type="submit">Отправить</button>
+    </form>
+    <div id="global-chat-status" class="global-chat-status" role="status"></div>
+  </section>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
 </div>
@@ -425,8 +449,8 @@ window.addEventListener('load', () => {
   <div class="title" style="font-size:32px">Онлайн-режим</div>
   <div class="subtitle">Играйте с разных телефонов</div>
   <div class="center-stack">
-    <button class="btn btn-primary" onclick="onlinePrepareCreate('private')">Играть с друзьями — создать комнату</button>
-    <button class="btn btn-secondary" onclick="go('public-rooms');listPublicRooms()">Найти открытую игру</button>
+    <button class="btn btn-primary" onclick="go('public-rooms');listPublicRooms()">Играть — найти открытую комнату</button>
+    <button class="btn btn-secondary" onclick="onlinePrepareCreate('private')">Играть с друзьями</button>
     <button class="btn btn-ghost" onclick="showOnlineJoin()">Войти по коду или ссылке</button>
     <button class="btn btn-ghost" onclick="go('home')">← На главную</button>
   </div>
@@ -1155,6 +1179,88 @@ async function onlineTextLoadMessages(reset){
 const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== ОБЩИЙ ЧАТ НА ГЛАВНОЙ =====
+let globalChatLastId = 0;
+let globalChatBusy = false;
+let globalChatTimer = null;
+function globalChatSetStatus(message, isError=false) {
+  const el=document.getElementById('global-chat-status');
+  if(el){el.textContent=message||'';el.style.color=isError?'#b42318':'var(--muted)';}
+}
+function globalChatAddMessage(item, prepend=false) {
+  const box=document.getElementById('global-chat-messages');
+  if(!box || box.querySelector('[data-message-id="'+item.id+'"]')) return;
+  const row=document.createElement('div');
+  row.className='global-chat-message'; row.dataset.messageId=String(item.id);
+  const name=document.createElement('strong'); name.textContent=(item.nickname||'Игрок')+':';
+  const body=document.createElement('span'); body.textContent=item.message||'';
+  row.append(name,body);
+  if(prepend) box.prepend(row); else box.appendChild(row);
+}
+async function refreshGlobalChat(initial=false) {
+  if(globalChatBusy) return;
+  const box=document.getElementById('global-chat-messages');
+  if(!box) return;
+  globalChatBusy=true;
+  try {
+    const {data,error}=await supabaseClient.rpc('get_global_chat_messages',{p_after_id:initial?0:globalChatLastId});
+    if(error) throw error;
+    if(initial) { box.innerHTML=''; globalChatLastId=0; }
+    const messages=(data||[]).sort((a,b)=>Number(a.id)-Number(b.id));
+    messages.forEach(m=>{globalChatAddMessage(m);globalChatLastId=Math.max(globalChatLastId,Number(m.id)||0);});
+    while(box.children.length>50) box.removeChild(box.firstElementChild);
+    if(initial || messages.length) box.scrollTop=box.scrollHeight;
+    if(initial && !messages.length) {
+      const empty=document.createElement('p');empty.className='small-text';empty.style.margin='auto';empty.textContent='Пока тихо. Позови всех играть первым!';
+      box.appendChild(empty);
+    }
+    if(messages.length) { const empty=box.querySelector('.small-text'); if(empty) empty.remove(); }
+    globalChatSetStatus('');
+  } catch(e) {
+    console.warn('Общий чат:',e?.message||e);
+    if(initial) { box.innerHTML=''; const msg=document.createElement('p');msg.className='small-text';msg.textContent='Чат временно недоступен. Попробуй обновить страницу.';box.appendChild(msg); }
+    globalChatSetStatus('Не удалось загрузить чат.',true);
+  } finally { globalChatBusy=false; }
+}
+async function sendGlobalChatMessage(event) {
+  if(event) event.preventDefault();
+  const nameEl=document.getElementById('global-chat-name');
+  const input=document.getElementById('global-chat-input');
+  const button=document.getElementById('global-chat-send');
+  const nickname=(nameEl?.value||'').trim().slice(0,20);
+  const message=(input?.value||'').trim();
+  if(!nickname){globalChatSetStatus('Сначала введи ник.',true);nameEl?.focus();return;}
+  if(!message){globalChatSetStatus('Напиши сообщение.',true);input?.focus();return;}
+  if(message.length>240){globalChatSetStatus('Максимум 240 символов.',true);return;}
+  try { localStorage.setItem('obyasnyarium_global_chat_nickname',nickname); } catch(e) {}
+  if(button) button.disabled=true;
+  globalChatSetStatus('Отправляем…');
+  try {
+    const {error}=await supabaseClient.rpc('send_global_chat_message',{p_nickname:nickname,p_message:message});
+    if(error) {
+      const msg=String(error.message||'');
+      if(msg.includes('RATE_LIMITED')) throw new Error('Не так быстро — подожди несколько секунд.');
+      throw error;
+    }
+    input.value='';
+    await refreshGlobalChat(false);
+    globalChatSetStatus('Отправлено');
+    input.focus();
+  } catch(e) {
+    console.warn('Отправка общего сообщения:',e?.message||e);
+    globalChatSetStatus(e.message==='Failed to fetch'?'Нет соединения. Проверь интернет.':(e.message||'Не удалось отправить сообщение.'),true);
+  } finally { if(button) button.disabled=false; }
+}
+function initGlobalChat() {
+  const nameEl=document.getElementById('global-chat-name');
+  try { const saved=localStorage.getItem('obyasnyarium_global_chat_nickname'); if(nameEl && saved && !nameEl.value) nameEl.value=saved; } catch(e) {}
+  refreshGlobalChat(true);
+  if(globalChatTimer) clearInterval(globalChatTimer);
+  globalChatTimer=setInterval(()=>{
+    if(document.getElementById('screen-home')?.classList.contains('active')) refreshGlobalChat(false);
+  },5000);
+}
 let onlineVisibility = 'private';
 let publicRoomsRefreshTimer = null;
 

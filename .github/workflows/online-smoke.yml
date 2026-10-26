@@ -1,9 +1,17 @@
 name: Online two-browser smoke test
 
 on:
+  pull_request:
+    branches: [main]
+    paths:
+      - "index.html"
+      - "tests/online-smoke.cjs"
+      - "supabase/migrations/**"
+      - ".github/workflows/online-smoke.yml"
   push:
     branches: [main]
     paths:
+      - "index.html"
       - "tests/online-smoke.cjs"
       - "supabase/migrations/**"
       - ".github/workflows/online-smoke.yml"
@@ -33,5 +41,19 @@ jobs:
         run: |
           npm install --no-save playwright
           npx playwright install --with-deps chromium
-      - name: Test live online game in two isolated browsers
-        run: node tests/online-smoke.cjs
+      - name: Serve the checked-out build for pull-request testing
+        if: github.event_name == 'pull_request'
+        run: |
+          python3 -m http.server 4173 > /tmp/obyasnyarium-http.log 2>&1 &
+          for i in $(seq 1 20); do
+            if curl -fsS http://127.0.0.1:4173/ > /dev/null; then break; fi
+            sleep 1
+          done
+          curl -fsS http://127.0.0.1:4173/ > /dev/null
+      - name: Test online game in two isolated browsers
+        run: |
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            BASE_URL=http://127.0.0.1:4173/ node tests/online-smoke.cjs
+          else
+            node tests/online-smoke.cjs
+          fi

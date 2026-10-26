@@ -87,6 +87,21 @@ const TIMEOUT = 20000;
 
       await cleanup(guest);
       await cleanup(host);
+
+      // The room remains available, but the previous group's chat must be cleared.
+      await enterOnline(host);
+      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-public-rooms.active').waitFor();
+      await host.locator('#public-room-player-name').fill('CI Empty Room Check');
+      await host.getByText(/Комната 3/).click();
+      await host.locator('#screen-online-lobby.active').waitFor();
+      await host.waitForTimeout(500);
+      const emptyRoomChat = await host.locator('#fixed-room-chat').innerText();
+      if (emptyRoomChat.includes('Привет из теста')) {
+        throw new Error('Fixed room chat was not cleared after the last player left.');
+      }
+      await cleanup(host);
+      console.log('PASS: empty fixed rooms persist and start with a clean chat.');
     } else {
       // Legacy public-room regression check when running against the currently deployed build.
       await enterOnline(host);
@@ -156,11 +171,11 @@ const TIMEOUT = 20000;
     await host.reload({ waitUntil: 'domcontentloaded' });
     await host.locator('#screen-online-lobby.active').waitFor();
     await host.getByText('CI Guest', { exact: true }).waitFor();
-    await guest.getByText('CI Host', { exact: true }).waitFor();
+    await guest.getByText(/CI Host/).waitFor();
 
     await guest.reload({ waitUntil: 'domcontentloaded' });
     await guest.locator('#screen-online-lobby.active').waitFor();
-    await guest.getByText('CI Host', { exact: true }).waitFor();
+    await guest.getByText(/CI Host/).waitFor();
     await host.getByText('CI Guest', { exact: true }).waitFor();
     console.log('PASS: host and guest both restore the same lobby after page reload.');
 

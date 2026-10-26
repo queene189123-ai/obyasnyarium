@@ -425,7 +425,11 @@ function newCounterId() {
 function trackSessionCounterEvent(eventType, gameMode, eventKey) {
   try {
     supabaseClient.rpc('track_game_session_event', { p_event_type:eventType, p_game_mode:gameMode, p_event_key:eventKey })
-      .then(({error}) => { if (error) console.warn('Counter event failed', error.message); });
+      .then(({data,error}) => {
+        if (error) console.warn('Counter event failed', error.message);
+        else if (data === false) console.warn('Counter event rejected by server validation', { eventType, gameMode });
+      })
+      .catch(e => console.warn('Counter event failed', e));
   } catch(e) { console.warn('Counter event failed', e); }
 }
 function createOfflineLobby() {

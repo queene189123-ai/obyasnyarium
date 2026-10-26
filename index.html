@@ -1462,7 +1462,7 @@ function renderOnlineLobby(){
   document.getElementById('online-start-btn').style.display=online.playerId===online.hostId && getOnlinePlayers().length>=2?'block':'none';
 }
 
-async async function onlineStartGame(){
+async function onlineStartGame(){
   if(online.playerId!==online.hostId) return;
   if(!online.state || !Array.isArray(online.state.players) || online.state.players.length<2) { alert('Нужно минимум два игрока.'); return; }
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];

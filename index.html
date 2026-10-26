@@ -429,6 +429,7 @@ function trackSessionCounterEvent(eventType, gameMode, eventKey) {
   } catch(e) { console.warn('Counter event failed', e); }
 }
 function createOfflineLobby() {
+  trackAnalyticsEvent('offline_mode_click');
   trackSessionCounterEvent('lobby_created', 'offline', 'offline-lobby-' + newCounterId());
   go('offline-setup');
 }
@@ -487,7 +488,7 @@ async function shareSite() {
   <img class="title-logo" src="logo.svg" alt="Объясняриум">
   <div class="subtitle">Продемонстрируй словарный запас и смекалку!</div>
   <button class="btn btn-primary" onclick="createOfflineLobby()">Играть офлайн</button>
-  <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <button class="btn btn-secondary" onclick="showOnlineMode()">Играть онлайн</button>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
 
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
@@ -1318,6 +1319,7 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
 let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, saving:false, version:0, state:null, connectionLost:false };
 
+function showOnlineMode(){ trackAnalyticsEvent('online_mode_click'); go('online'); }
 function showOnlineJoin(){ go('online-join'); }
 function onlineShowName(){ go('online-name'); }
 function makePlayerId(){ return crypto.randomUUID ? crypto.randomUUID() : String(Date.now()) + Math.random().toString(36).slice(2); }

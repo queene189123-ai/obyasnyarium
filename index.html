@@ -389,7 +389,7 @@ window.addEventListener('load', () => {
   loadGameSettings();
   refreshSessionCounter();
   setInterval(refreshSessionCounter, 30000);
-  const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");const nameInput=document.getElementById("online-join-name");if(nameInput)nameInput.focus();}
+  const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){trackAnalyticsEvent('invite_link_open');const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");const nameInput=document.getElementById("online-join-name");if(nameInput)nameInput.focus();}
   const joinCodeInput=document.getElementById("online-join-code");if(joinCodeInput){joinCodeInput.addEventListener("input",()=>{joinCodeInput.value=joinCodeInput.value.replace(/\D/g,"").slice(0,5);});}
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}

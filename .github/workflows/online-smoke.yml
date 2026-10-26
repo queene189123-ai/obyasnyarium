@@ -40,7 +40,7 @@ jobs:
       - name: Install Playwright
         run: |
           npm install --no-save playwright
-          npx playwright install --with-deps chromium
+          npx playwright install chromium
       - name: Serve the checked-out build for pull-request testing
         if: github.event_name == 'pull_request'
         run: |

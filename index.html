@@ -425,9 +425,22 @@ window.addEventListener('load', () => {
   <div class="title" style="font-size:32px">Онлайн-режим</div>
   <div class="subtitle">Играйте с разных телефонов</div>
   <div class="center-stack">
-    <button class="btn btn-primary" onclick="onlineCreateRoom()">Создать комнату</button>
-    <button class="btn btn-secondary" onclick="showOnlineJoin()">Войти в комнату</button>
+    <button class="btn btn-primary" onclick="onlinePrepareCreate('private')">Играть с друзьями — создать комнату</button>
+    <button class="btn btn-secondary" onclick="go('public-rooms');listPublicRooms()">Найти открытую игру</button>
+    <button class="btn btn-ghost" onclick="showOnlineJoin()">Войти по коду или ссылке</button>
     <button class="btn btn-ghost" onclick="go('home')">← На главную</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-public-rooms">
+  <div class="title" style="font-size:30px">Открытые комнаты</div>
+  <div class="subtitle">Выбери комнату и присоединяйся к незнакомым игрокам</div>
+  <div class="center-stack">
+    <input class="input" id="public-room-player-name" placeholder="Твоё имя" maxlength="20" autocomplete="nickname">
+    <div id="public-room-list" class="scoreboard" aria-live="polite"><p class="small-text">Загружаем комнаты…</p></div>
+    <button class="btn btn-secondary" onclick="listPublicRooms()">↻ Обновить список</button>
+    <button class="btn btn-primary" onclick="onlinePrepareCreate('public')">Создать открытую комнату</button>
+    <button class="btn btn-ghost" onclick="go('online')">← Назад</button>
   </div>
 </div>
 
@@ -445,7 +458,7 @@ window.addEventListener('load', () => {
 
 <div class="screen" id="screen-online-name">
   <div class="title" style="font-size:32px">Создать комнату</div>
-  <div class="subtitle">Введи своё имя</div>
+  <div class="subtitle" id="online-create-subtitle">Введи своё имя</div>
   <div class="center-stack">
     <input class="input" id="online-host-name" placeholder="Твоё имя" maxlength="20" onkeydown="if(event.key==='Enter')onlineCreateRoom()">
     <button class="btn btn-primary" onclick="onlineCreateRoom()">Создать</button>
@@ -1015,6 +1028,60 @@ function escapeAttr(s) { return s.replace(/'/g, "\'"); }
 const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+let onlineVisibility = 'private';
+let publicRoomsRefreshTimer = null;
+
+function onlinePrepareCreate(visibility){
+  onlineVisibility = visibility === 'public' ? 'public' : 'private';
+  const subtitle = document.getElementById('online-create-subtitle');
+  if(subtitle) subtitle.textContent = onlineVisibility === 'public'
+    ? 'Открытая комната — её увидят другие игроки'
+    : 'Приватная комната — приглашай друзей по ссылке';
+  go('online-name');
+}
+async function listPublicRooms(){
+  const box = document.getElementById('public-room-list');
+  if(!box) return;
+  box.innerHTML = '<p class="small-text">Ищем активные комнаты…</p>';
+  const {data,error} = await supabaseClient.rpc('list_public_rooms');
+  if(error){
+    box.innerHTML = '<p class="small-text">Список пока недоступен. Возможно, обновление базы ещё не применено.</p>';
+    console.warn('list_public_rooms:', error.message);
+    return;
+  }
+  if(!data || !data.length){
+    box.innerHTML = '<p class="small-text">Пока нет открытых комнат. Создай первую — к тебе смогут присоединиться другие игроки.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  data.forEach(room=>{
+    const row=document.createElement('div');
+    row.className='score-row';
+    const names=Array.isArray(room.player_names) ? room.player_names : [];
+    const count=Number(room.player_count)||0;
+    row.innerHTML='<span class="rank">🎮</span><span class="pname"></span><span class="pscore"></span>';
+    row.querySelector('.pname').textContent=names.join(', ') || 'Открытая комната';
+    row.querySelector('.pscore').textContent=count+'/8';
+    row.style.cursor='pointer';
+    row.setAttribute('role','button');
+    row.tabIndex=0;
+    const enter=()=>{
+      const name=(document.getElementById('public-room-player-name')?.value||'').trim().slice(0,20);
+      if(!name){document.getElementById('public-room-player-name')?.focus();alert('Сначала введи своё имя.');return;}
+      document.getElementById('online-join-name').value=name;
+      document.getElementById('online-join-code').value=room.room_code;
+      go('online-join');
+    };
+    row.addEventListener('click',enter);
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter();}});
+    box.appendChild(row);
+  });
+  if(publicRoomsRefreshTimer) clearInterval(publicRoomsRefreshTimer);
+  publicRoomsRefreshTimer=setInterval(()=>{
+    if(document.getElementById('screen-public-rooms')?.classList.contains('active')) listPublicRooms();
+    else { clearInterval(publicRoomsRefreshTimer); publicRoomsRefreshTimer=null; }
+  },10000);
+}
 
 let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null, connectionLost:false };
 
@@ -1031,7 +1098,7 @@ async function onlineCreateRoom(){
   online.playerToken = makePlayerToken();
   online.name = name;
   online.hostId = online.playerId;
-  const initialState = { status:'lobby', players:[{id:online.playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
+  const initialState = { status:'lobby', visibility:onlineVisibility, players:[{id:online.playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
   let created = null;
   for(let i=0;i<10;i++){
     const code = makeRoomCode();
@@ -1047,6 +1114,7 @@ async function onlineCreateRoom(){
   if(!created){ alert('Не удалось подобрать код комнаты. Попробуй ещё раз.'); return; }
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version || 0;
+  onlineVisibility = 'private';
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 

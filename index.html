@@ -484,6 +484,10 @@ async function shareSite() {
 .global-chat-messages { display:flex; flex-direction:column; gap:8px; height:190px; overflow-y:auto; overscroll-behavior:contain; padding:10px; background:#fbf6ef; border-radius:12px; }
 .global-chat-message { font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
 .global-chat-message strong { color:var(--accent-dark); margin-right:5px; }
+.global-chat-message.admin-message { padding:8px 10px; border:1px solid #f2b5a8; background:#fff0eb; border-radius:10px; }
+.global-chat-message .admin-badge { display:inline-block; margin-right:5px; padding:2px 6px; border-radius:6px; background:#f5a08e; color:#54251c; font-size:10px; font-weight:800; }
+.global-chat-message .admin-tools { display:flex; gap:6px; margin-top:5px; }
+.global-chat-message .admin-tools button { padding:3px 7px; border:1px solid #e5c4bb; border-radius:6px; background:#fff; font-size:11px; color:#5d352d; }
 .global-chat-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:8px; margin-top:10px; }
 .global-chat-form .input { width:100%; min-width:0; margin:0; }
 .global-chat-form button { grid-column:1 / -1; margin:0; }
@@ -503,6 +507,18 @@ async function shareSite() {
   <section class="global-chat" aria-label="Общий чат игроков">
     <div class="global-chat-heading">💬 Общий чат</div>
     <div class="global-chat-subtitle">Позови игроков: «Пойдёмте играть!»</div>
+    <button class="btn btn-secondary" id="global-chat-admin-open" type="button" onclick="toggleGlobalChatAdmin()">Администрация</button>
+    <div id="global-chat-admin-panel" hidden>
+      <form class="global-chat-form" onsubmit="globalChatAdminLogin(event)">
+        <input class="input" id="global-chat-admin-password" type="password" placeholder="Пароль администратора" autocomplete="current-password" aria-label="Пароль администратора">
+        <button class="btn btn-secondary" type="submit">Войти</button>
+      </form>
+      <form id="global-chat-admin-post-form" class="global-chat-form" onsubmit="sendGlobalChatAnnouncement(event)" hidden>
+        <input class="input" id="global-chat-admin-post" placeholder="Объявление от администрации…" maxlength="240" aria-label="Объявление от администрации">
+        <button class="btn btn-primary" type="submit">Опубликовать</button>
+      </form>
+      <div id="global-chat-admin-status" class="global-chat-status" role="status"></div>
+    </div>
     <div id="global-chat-messages" class="global-chat-messages" aria-live="polite"><p class="small-text">Загружаем сообщения…</p></div>
     <form class="global-chat-form" onsubmit="sendGlobalChatMessage(event)">
       <input class="input" id="global-chat-name" placeholder="Твой ник" maxlength="20" autocomplete="nickname" aria-label="Твой ник">
@@ -1342,82 +1358,147 @@ const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 let globalChatLastId = 0;
 let globalChatBusy = false;
 let globalChatTimer = null;
+let globalChatItems = [];
+let globalChatAdminPassword = '';
 function globalChatSetStatus(message, isError=false) {
   const el=document.getElementById('global-chat-status');
   if(el){el.textContent=message||'';el.style.color=isError?'#b42318':'var(--muted)';}
 }
-function globalChatAddMessage(item, prepend=false) {
+function globalChatAdminSetStatus(message,isError=false) {
+  const el=document.getElementById('global-chat-admin-status');
+  if(el){el.textContent=message||'';el.style.color=isError?'#b42318':'var(--muted)';}
+}
+function toggleGlobalChatAdmin() {
+  const panel=document.getElementById('global-chat-admin-panel');
+  if(panel) panel.hidden=!panel.hidden;
+}
+function globalChatRenderItems() {
   const box=document.getElementById('global-chat-messages');
-  if(!box || box.querySelector('[data-message-id="'+item.id+'"]')) return;
+  if(!box)return;
+  box.innerHTML='';
+  globalChatItems.slice(-50).forEach(item=>globalChatAddMessage(item));
+  if(!globalChatItems.length) {
+    const empty=document.createElement('p');empty.className='small-text';empty.style.margin='auto';empty.textContent='Пока тихо. Позови всех играть первым!';
+    box.appendChild(empty);
+  }
+  box.scrollTop=box.scrollHeight;
+}
+function globalChatAddMessage(item) {
+  const box=document.getElementById('global-chat-messages');
+  if(!box)return;
   const row=document.createElement('div');
-  row.className='global-chat-message'; row.dataset.messageId=String(item.id);
-  const name=document.createElement('strong'); name.textContent=(item.nickname||'Игрок')+':';
-  const body=document.createElement('span'); body.textContent=item.message||'';
+  row.className='global-chat-message'+(item.is_admin?' admin-message':'');
+  row.dataset.messageId=String(item.id);
+  const name=document.createElement('strong');
+  if(item.is_admin) {
+    const badge=document.createElement('span');badge.className='admin-badge';badge.textContent='📢 Администрация';
+    row.appendChild(badge);
+  }
+  name.textContent=(item.nickname||'Игрок')+':';
+  const body=document.createElement('span');body.textContent=(item.message||'')+(item.edited_at?' (изменено)':'');
   row.append(name,body);
-  if(prepend) box.prepend(row); else box.appendChild(row);
+  if(globalChatAdminPassword) {
+    const tools=document.createElement('div');tools.className='admin-tools';
+    const edit=document.createElement('button');edit.type='button';edit.textContent='Изменить';
+    edit.addEventListener('click',()=>editGlobalChatMessage(Number(item.id),item.message||''));
+    const del=document.createElement('button');del.type='button';del.textContent='Удалить';
+    del.addEventListener('click',()=>deleteGlobalChatMessage(Number(item.id)));
+    tools.append(edit,del);row.appendChild(tools);
+  }
+  box.appendChild(row);
 }
 async function refreshGlobalChat(initial=false) {
-  if(globalChatBusy) return;
-  const box=document.getElementById('global-chat-messages');
-  if(!box) return;
+  if(globalChatBusy)return;
+  const box=document.getElementById('global-chat-messages');if(!box)return;
   globalChatBusy=true;
   try {
     const {data,error}=await supabaseClient.rpc('get_global_chat_messages',{p_after_id:initial?0:globalChatLastId});
-    if(error) throw error;
-    if(initial) { box.innerHTML=''; globalChatLastId=0; }
+    if(error)throw error;
+    if(initial){globalChatItems=[];globalChatLastId=0;}
     const messages=(data||[]).sort((a,b)=>Number(a.id)-Number(b.id));
-    messages.forEach(m=>{globalChatAddMessage(m);globalChatLastId=Math.max(globalChatLastId,Number(m.id)||0);});
-    while(box.children.length>50) box.removeChild(box.firstElementChild);
-    if(initial || messages.length) box.scrollTop=box.scrollHeight;
-    if(initial && !messages.length) {
-      const empty=document.createElement('p');empty.className='small-text';empty.style.margin='auto';empty.textContent='Пока тихо. Позови всех играть первым!';
-      box.appendChild(empty);
+    for(const m of messages) {
+      const idx=globalChatItems.findIndex(x=>Number(x.id)===Number(m.id));
+      if(idx>=0)globalChatItems[idx]=m;else globalChatItems.push(m);
+      globalChatLastId=Math.max(globalChatLastId,Number(m.id)||0);
     }
-    if(messages.length) { const empty=box.querySelector('.small-text'); if(empty) empty.remove(); }
+    globalChatItems=globalChatItems.slice(-50);
+    globalChatRenderItems();
     globalChatSetStatus('');
   } catch(e) {
     console.warn('Общий чат:',e?.message||e);
-    if(initial) { box.innerHTML=''; const msg=document.createElement('p');msg.className='small-text';msg.textContent='Чат временно недоступен. Попробуй обновить страницу.';box.appendChild(msg); }
+    if(initial){box.innerHTML='';const msg=document.createElement('p');msg.className='small-text';msg.textContent='Чат временно недоступен. Попробуй обновить страницу.';box.appendChild(msg);}
     globalChatSetStatus('Не удалось загрузить чат.',true);
-  } finally { globalChatBusy=false; }
+  } finally {globalChatBusy=false;}
 }
 async function sendGlobalChatMessage(event) {
-  if(event) event.preventDefault();
-  const nameEl=document.getElementById('global-chat-name');
-  const input=document.getElementById('global-chat-input');
-  const button=document.getElementById('global-chat-send');
-  const nickname=(nameEl?.value||'').trim().slice(0,20);
-  const message=(input?.value||'').trim();
+  if(event)event.preventDefault();
+  const nameEl=document.getElementById('global-chat-name'),input=document.getElementById('global-chat-input'),button=document.getElementById('global-chat-send');
+  const nickname=(nameEl?.value||'').trim().slice(0,20),message=(input?.value||'').trim();
   if(!nickname){globalChatSetStatus('Сначала введи ник.',true);nameEl?.focus();return;}
+  if(nickname.toLocaleLowerCase('ru-RU')==='объясняриум'){globalChatSetStatus('Этот ник зарезервирован за администрацией.',true);nameEl?.focus();return;}
   if(!message){globalChatSetStatus('Напиши сообщение.',true);input?.focus();return;}
   if(message.length>240){globalChatSetStatus('Максимум 240 символов.',true);return;}
-  try { localStorage.setItem('obyasnyarium_global_chat_nickname',nickname); } catch(e) {}
-  if(button) button.disabled=true;
-  globalChatSetStatus('Отправляем…');
+  try{localStorage.setItem('obyasnyarium_global_chat_nickname',nickname);}catch(e){}
+  if(button)button.disabled=true;globalChatSetStatus('Отправляем…');
   try {
     const {error}=await supabaseClient.rpc('send_global_chat_message',{p_nickname:nickname,p_message:message});
-    if(error) {
-      const msg=String(error.message||'');
-      if(msg.includes('RATE_LIMITED')) throw new Error('Не так быстро — подожди несколько секунд.');
-      throw error;
-    }
-    input.value='';
-    await refreshGlobalChat(false);
-    globalChatSetStatus('Отправлено');
-    input.focus();
-  } catch(e) {
-    console.warn('Отправка общего сообщения:',e?.message||e);
-    globalChatSetStatus(e.message==='Failed to fetch'?'Нет соединения. Проверь интернет.':(e.message||'Не удалось отправить сообщение.'),true);
-  } finally { if(button) button.disabled=false; }
+    if(error){const msg=String(error.message||'');if(msg.includes('RATE_LIMITED'))throw new Error('Не так быстро — подожди несколько секунд.');if(msg.includes('RESERVED_NICKNAME'))throw new Error('Ник «Объясняриум» зарезервирован за администрацией.');throw error;}
+    input.value='';await refreshGlobalChat(false);globalChatSetStatus('Отправлено');input.focus();
+  }catch(e){console.warn('Отправка общего сообщения:',e?.message||e);globalChatSetStatus(e.message||'Не удалось отправить сообщение.',true);}
+  finally{if(button)button.disabled=false;}
+}
+async function globalChatAdminLogin(event) {
+  if(event)event.preventDefault();
+  const password=document.getElementById('global-chat-admin-password')?.value||'';
+  if(!password){globalChatAdminSetStatus('Введи пароль администратора.',true);return;}
+  globalChatAdminSetStatus('Проверяем…');
+  try {
+    const {data,error}=await supabaseClient.rpc('global_chat_admin_login',{p_password:password});
+    if(error)throw error;
+    if(data!==true)throw new Error('Неверный пароль.');
+    globalChatAdminPassword=password;
+    document.getElementById('global-chat-admin-password').value='';
+    document.getElementById('global-chat-admin-post-form').hidden=false;
+    document.getElementById('global-chat-admin-open').textContent='Администрация ✓';
+    globalChatAdminSetStatus('Вход выполнен. Можно публиковать объявления и модерировать чат.');
+    globalChatRenderItems();
+  }catch(e){globalChatAdminPassword='';globalChatAdminSetStatus(e.message||'Не удалось войти.',true);}
+}
+async function sendGlobalChatAnnouncement(event) {
+  if(event)event.preventDefault();
+  const input=document.getElementById('global-chat-admin-post'),message=(input?.value||'').trim();
+  if(!globalChatAdminPassword){globalChatAdminSetStatus('Сначала войди как администратор.',true);return;}
+  try {
+    const {error}=await supabaseClient.rpc('admin_send_global_chat_message',{p_password:globalChatAdminPassword,p_message:message});
+    if(error)throw error;
+    input.value='';await refreshGlobalChat(true);globalChatAdminSetStatus('Объявление опубликовано.');
+  }catch(e){globalChatAdminSetStatus(e.message||'Не удалось опубликовать объявление.',true);}
+}
+async function editGlobalChatMessage(id,oldMessage) {
+  const message=prompt('Измени сообщение (до 240 символов):',oldMessage);
+  if(message===null)return;
+  try {
+    const {data,error}=await supabaseClient.rpc('admin_edit_global_chat_message',{p_password:globalChatAdminPassword,p_id:id,p_message:message});
+    if(error)throw error;
+    if(!data)throw new Error('Сообщение не найдено.');
+    await refreshGlobalChat(true);globalChatAdminSetStatus('Сообщение изменено.');
+  }catch(e){globalChatAdminSetStatus(e.message||'Не удалось изменить сообщение.',true);}
+}
+async function deleteGlobalChatMessage(id) {
+  if(!confirm('Удалить это сообщение без возможности восстановления?'))return;
+  try {
+    const {data,error}=await supabaseClient.rpc('admin_delete_global_chat_message',{p_password:globalChatAdminPassword,p_id:id});
+    if(error)throw error;
+    if(!data)throw new Error('Сообщение не найдено.');
+    globalChatItems=globalChatItems.filter(x=>Number(x.id)!==id);globalChatRenderItems();globalChatAdminSetStatus('Сообщение удалено.');
+  }catch(e){globalChatAdminSetStatus(e.message||'Не удалось удалить сообщение.',true);}
 }
 function initGlobalChat() {
   const nameEl=document.getElementById('global-chat-name');
-  try { const saved=localStorage.getItem('obyasnyarium_global_chat_nickname'); if(nameEl && saved && !nameEl.value) nameEl.value=saved; } catch(e) {}
+  try{const saved=localStorage.getItem('obyasnyarium_global_chat_nickname');if(nameEl&&saved&&!nameEl.value)nameEl.value=saved;}catch(e){}
   refreshGlobalChat(true);
-  if(globalChatTimer) clearInterval(globalChatTimer);
-  globalChatTimer=setInterval(()=>{
-    if(document.getElementById('screen-home')?.classList.contains('active')) refreshGlobalChat(false);
-  },5000);
+  if(globalChatTimer)clearInterval(globalChatTimer);
+  globalChatTimer=setInterval(()=>{if(document.getElementById('screen-home')?.classList.contains('active'))refreshGlobalChat(false);},5000);
 }
 
 let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, saving:false, version:0, state:null, connectionLost:false };

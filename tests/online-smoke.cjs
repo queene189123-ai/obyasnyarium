@@ -116,6 +116,18 @@ const TIMEOUT = 20000;
     await host.getByText('CI Guest', { exact: true }).waitFor();
     await guest.getByText(/CI Host/).waitFor();
 
+    // Reloading either participant must restore the same room and preserve the shared roster.
+    await host.reload({ waitUntil: 'domcontentloaded' });
+    await host.locator('#screen-online-lobby.active').waitFor();
+    await host.getByText('CI Guest', { exact: true }).waitFor();
+    await guest.getByText('CI Host', { exact: true }).waitFor();
+
+    await guest.reload({ waitUntil: 'domcontentloaded' });
+    await guest.locator('#screen-online-lobby.active').waitFor();
+    await guest.getByText('CI Host', { exact: true }).waitFor();
+    await host.getByText('CI Guest', { exact: true }).waitFor();
+    console.log('PASS: host and guest both restore the same lobby after page reload.');
+
     // Simulate a failed server poll, then restore RPC calls and verify recovery.
     // This exercises the actual onlineSync error/retry path, not just browser event handlers.
     for (const page of [host, guest]) {

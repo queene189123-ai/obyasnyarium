@@ -396,15 +396,18 @@ window.addEventListener('load', () => {
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
   const btn=document.getElementById('online-resume-btn');
   if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
-  // После обновления страницы возвращаем игрока в ту же комнату.
-  // При новом открытии сайта (новая вкладка) показываем главный экран.
+  let lastScreen='home';
+  try { lastScreen=sessionStorage.getItem('obyasnyarium_last_screen_v1')||'home'; } catch(e) {}
+  // При обновлении сохраняем текущий экран; явная ссылка на комнату всегда важнее.
+  if(!roomCode && lastScreen==='rules') go('rules');
+  // Онлайн-комнату восстанавливаем только в текущей вкладке и если пользователь не на экране правил.
   let restoreOnReload=false;
   try { restoreOnReload=sessionStorage.getItem('obyasnyarium_restore_on_reload')==='1'; } catch(e) {}
-  if(restoreOnReload && !roomCode && saved && saved.roomId && saved.playerToken) restoreOnlineSession();
-  // Офлайн-игру восстанавливаем только в этой вкладке после обновления.
+  if(restoreOnReload && !roomCode && lastScreen!=='rules' && saved && saved.roomId && saved.playerToken) restoreOnlineSession();
+  // Офлайн-игру восстанавливаем на её игровых экранах, но не поверх экрана правил.
   let restoreOfflineOnReload=false;
   try { restoreOfflineOnReload=sessionStorage.getItem('obyasnyarium_offline_restore_on_reload')==='1'; } catch(e) {}
-  if(restoreOfflineOnReload && !roomCode) restoreOfflineGame();
+  if(restoreOfflineOnReload && !roomCode && lastScreen!=='rules') restoreOfflineGame();
 });
 </script>
 <!-- Google Analytics 4 -->
@@ -1152,13 +1155,15 @@ let state = {
 function go(id) {
   document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
   document.getElementById('screen-' + id).classList.add('active');
+  try { sessionStorage.setItem('obyasnyarium_last_screen_v1', id); } catch(e) {}
   if (id === 'offline-setup') renderPlayers();
   if (id === 'home') {
     try {
       localStorage.removeItem('obyasnyarium_offline_game_v1');
       sessionStorage.removeItem('obyasnyarium_offline_restore_on_reload');
     } catch(e) {}
-  } else {
+  } else if (['offline-setup','pass','word','guess','score','offline-finish'].includes(id)) {
+    // Не перезаписываем сохранённый ход, когда пользователь открывает правила или онлайн-экраны.
     saveOfflineGame(id);
   }
 }

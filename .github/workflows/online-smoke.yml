@@ -42,7 +42,7 @@ jobs:
           npm install --no-save playwright
           npx playwright install chromium
       - name: Serve the checked-out build for pull-request testing
-        if: github.event_name == 'pull_request'
+        if: github.event_name != 'workflow_run'
         run: |
           python3 -m http.server 4173 > /tmp/obyasnyarium-http.log 2>&1 &
           for i in $(seq 1 20); do
@@ -52,8 +52,8 @@ jobs:
           curl -fsS http://127.0.0.1:4173/ > /dev/null
       - name: Test online game in two isolated browsers
         run: |
-          if [ "${{ github.event_name }}" = "pull_request" ]; then
-            TEST_FIXED_ROOMS=1 BASE_URL=http://127.0.0.1:4173/ node tests/online-smoke.cjs
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            TEST_FIXED_ROOMS=1 node tests/online-smoke.cjs
           else
-            node tests/online-smoke.cjs
+            TEST_FIXED_ROOMS=1 BASE_URL=http://127.0.0.1:4173/ node tests/online-smoke.cjs
           fi

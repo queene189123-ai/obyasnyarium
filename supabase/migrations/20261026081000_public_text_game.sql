@@ -79,7 +79,7 @@ begin
   v_current_id := v_players->v_idx->>'id';
   v_word := coalesce(v_state->>'currentWord','');
   v_letter := upper(left(trim(coalesce(v_state->>'currentLetter','')),1));
-  v_msg := left(trim(regexp_replace(coalesce(p_message,''), '\s+', ' ', 'g')),80);
+  v_msg := trim(regexp_replace(coalesce(p_message,''), '\\s+', ' ', 'g'));
   if v_msg='' then raise exception 'EMPTY_MESSAGE'; end if;
   if length(v_msg)>80 then raise exception 'MESSAGE_TOO_LONG'; end if;
   if v_word='' or v_letter='' then raise exception 'ROUND_NOT_READY'; end if;

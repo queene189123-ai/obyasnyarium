@@ -500,6 +500,25 @@ window.addEventListener('load', () => {
   </div>
 </div>
 
+<div class="screen" id="screen-public-text-game">
+  <div class="title" style="font-size:28px">Открытая игра</div>
+  <div class="subtitle" id="public-text-status">Объясняй и угадывай в чате</div>
+  <div class="scoreboard" id="public-text-scores"></div>
+  <div class="word-screen" id="public-text-round" style="width:100%;max-width:520px">
+    <div class="word-label" id="public-text-round-label">Твой ход</div>
+    <div class="word" id="public-text-answer"></div>
+    <div class="letter-box" id="public-text-letter"></div>
+    <button class="btn btn-primary" id="public-text-start-btn" onclick="onlineTextStartRound()" style="display:none">Получить слово</button>
+    <button class="btn btn-primary" id="public-text-next-btn" onclick="onlineTextNextRound()" style="display:none">Следующий раунд →</button>
+  </div>
+  <div class="scoreboard" id="public-text-messages" aria-live="polite" style="width:100%;max-width:520px;max-height:260px;overflow:auto"></div>
+  <div class="center-stack" style="width:100%;max-width:520px">
+    <input class="input" id="public-text-message" placeholder="Слово на разрешённую букву…" maxlength="80" onkeydown="if(event.key==='Enter')onlineTextSend()">
+    <button class="btn btn-primary" id="public-text-send-btn" onclick="onlineTextSend()">Отправить</button>
+    <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
+  </div>
+</div>
+
 <div class="screen" id="screen-online-guess">
   <div class="title" style="font-size:28px">Кто угадал?</div>
   <div class="subtitle">Очко вам обоим</div>
@@ -1024,6 +1043,114 @@ function resetOfflineGame() {
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s) { return s.replace(/'/g, "\'"); }
 
+
+// ===== PUBLIC TEXT GAME =====
+let publicTextLastMessageId = 0;
+let publicTextMessagesBusy = false;
+function renderPublicTextGame(){
+  const s=online.state; if(!s) return;
+  const current=onlineCurrentPlayer();
+  const isExplainer=current?.id===online.playerId;
+  const status=document.getElementById('public-text-status');
+  const label=document.getElementById('public-text-round-label');
+  const answer=document.getElementById('public-text-answer');
+  const letter=document.getElementById('public-text-letter');
+  const start=document.getElementById('public-text-start-btn');
+  const next=document.getElementById('public-text-next-btn');
+  const input=document.getElementById('public-text-message');
+  const send=document.getElementById('public-text-send-btn');
+  document.getElementById('public-text-scores').innerHTML=getOnlinePlayers().map(p=>'<div class="score-row"><span class="pname">'+escapeHtml(p.name)+'</span><span class="pscore">'+(p.score||0)+'</span></div>').join('');
+  start.style.display='none'; next.style.display='none'; input.style.display='block'; send.style.display='block';
+  if(s.status==='pass'){
+    status.textContent='Комната готова. Ведущий начинает раунд.';
+    label.textContent=isExplainer?'Твой ход':'Сейчас ходит '+(current?.name||'игрок');
+    answer.textContent=''; letter.textContent='';
+    start.style.display=isExplainer?'block':'none';
+    input.disabled=true; send.disabled=true;
+  }else if(s.status==='word'){
+    status.textContent=isExplainer?'Объясняй слово сообщениями в чате':'Угадывай слово по подсказкам в чате';
+    label.textContent=isExplainer?'Твоё слово':'Загаданное слово';
+    answer.textContent=isExplainer?(s.currentWord||'Слово загружается…'):'???';
+    letter.textContent=s.currentLetter||'';
+    input.placeholder=isExplainer?'Напиши слово на букву '+(s.currentLetter||'…'):'Введи свой вариант ответа';
+    input.disabled=false; send.disabled=false;
+  }else if(s.status==='text_result'){
+    const guesser=getOnlinePlayers().find(p=>p.id===s.selectedGuesserId);
+    status.textContent=(guesser?.name||'Игрок')+' угадал слово!';
+    label.textContent='Правильный ответ';
+    answer.textContent=s.currentWord||'Ответ раскрыт';
+    letter.textContent='';
+    next.style.display=isExplainer?'block':'none';
+    input.disabled=true; send.disabled=true;
+  }else if(s.status==='finished'){
+    status.textContent='Игра завершена';
+    label.textContent='Итоговые очки';
+    answer.textContent='';
+    input.disabled=true;send.disabled=true;
+  }
+}
+async function onlineTextStartRound(){
+  if(onlineCurrentPlayer()?.id!==online.playerId || online.state?.status!=='pass') return;
+  onlinePickWord();
+  online.state.text_mode=true;
+  await onlineSave();
+  await onlineTextLoadMessages(true);
+}
+async function onlineTextNextRound(){
+  if(onlineCurrentPlayer()?.id!==online.playerId || online.state?.status!=='text_result') return;
+  const used=new Set(online.state.usedWords||[]);
+  const word=chooseNextWord(used,online.state.currentWord); used.add(word);
+  const letters=Object.keys(REACTION_HINTS).filter(l=>l!==word[0].toUpperCase() && l!==online.state.currentLetter);
+  const letter=letters[Math.floor(Math.random()*letters.length)];
+  const {data,error}=await supabaseClient.rpc('advance_public_text_round',{
+    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,
+    p_expected_version:online.version,p_word:word,p_letter:letter
+  });
+  if(error){alert('Не удалось начать следующий раунд: '+error.message);await onlineSync();return;}
+  if(data){online.state=data.game_state||online.state;online.version=data.version||online.version+1;saveOnlineSession();updateOnlineHud();onlineRenderState();}
+  await onlineTextLoadMessages(true);
+}
+async function onlineTextSend(){
+  const input=document.getElementById('public-text-message');
+  const message=(input.value||'').trim();
+  if(!message || input.disabled || !online.roomId) return;
+  input.value='';
+  const {data,error}=await supabaseClient.rpc('send_public_text_message',{
+    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_message:message
+  });
+  if(error){
+    const msg=error.message||'';
+    const friendly=msg.includes('WRONG_LETTER')?'Начни сообщение с разрешённой буквы.':
+      msg.includes('CANNOT_SEND_ANSWER')?'Ведущий не может отправить загаданное слово.':
+      msg.includes('RATE_LIMITED')?'Слишком часто. Подожди секунду.':
+      msg.includes('ROUND_NOT_ACTIVE')?'Раунд уже закончился. Обновляем игру.':'Не удалось отправить: '+msg;
+    if(!msg.includes('RATE_LIMITED')) alert(friendly);
+    await onlineSync();return;
+  }
+  await onlineTextLoadMessages(false);
+  if(data?.correct) await onlineSync();
+}
+async function onlineTextLoadMessages(reset){
+  if(!online.roomId || !online.playerToken || publicTextMessagesBusy) return;
+  publicTextMessagesBusy=true;
+  try{
+    if(reset){publicTextLastMessageId=0;document.getElementById('public-text-messages').innerHTML='';}
+    const {data,error}=await supabaseClient.rpc('get_public_text_messages',{
+      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_after_id:publicTextLastMessageId
+    });
+    if(error){console.warn('Не удалось получить чат открытой комнаты:',error.message);return;}
+    const box=document.getElementById('public-text-messages');
+    (data||[]).forEach(m=>{
+      publicTextLastMessageId=Math.max(publicTextLastMessageId,Number(m.id)||0);
+      const row=document.createElement('div');row.className='score-row';
+      const name=document.createElement('span');name.className='pname';name.textContent=m.message_type==='system'?'🎉 '+m.player_name:m.player_name;
+      const body=document.createElement('span');body.className='pscore';body.style.maxWidth='70%';body.style.whiteSpace='normal';body.textContent=m.message;
+      row.append(name,body);box.appendChild(row);
+    });
+    box.scrollTop=box.scrollHeight;
+  }finally{publicTextMessagesBusy=false;}
+}
+
 // ===== ONLINE: SUPABASE =====
 const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
@@ -1221,8 +1348,10 @@ async function restoreOnlineSession(manual=false){
 
 function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
+  if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
+  online.textMessageTimer=setInterval(()=>{if(online.state?.text_mode && online.roomId) onlineTextLoadMessages(false);},1500);
   if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('online',()=>{online.connectionLost=false;onlineSync();});}
   onlineSync();
 }
@@ -1328,12 +1457,14 @@ function renderOnlineLobby(){
 async function onlineStartGame(){
   if(online.playerId!==online.hostId) return;
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
+  if(online.state.visibility==='public') online.state.text_mode=true;
   online.state.players.forEach(p=>p.score=0);
   await onlineSave();
 }
 
 function onlineRenderState(){
   const s=online.state; if(!s) return;
+  if(s.text_mode && s.visibility==='public'){ renderPublicTextGame(); go('public-text-game'); return; }
   if(s.status==='lobby'){ document.body.dataset.confettiRoom=''; renderOnlineLobby(); go('online-lobby'); return; }
   if(s.status==='pass'){ renderOnlinePass(); go('online-pass'); return; }
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
@@ -1370,6 +1501,7 @@ function onlinePickWord(){
 async function onlineShowWord(){
   if(onlineCurrentPlayer()?.id!==online.playerId) return;
   onlinePickWord(); await onlineSave();
+  if(online.state?.text_mode && online.state?.visibility==='public') onlineTextLoadMessages(true);
 }
 
 function renderOnlineWord(){
@@ -1418,6 +1550,7 @@ function renderOnlineScore(){
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
 async function onlineLeaveRoom(){
+  if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   if(online.roomId && online.playerToken){
     const {error}=await supabaseClient.rpc('leave_room', {
       p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken

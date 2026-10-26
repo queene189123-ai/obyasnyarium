@@ -402,7 +402,7 @@ window.addEventListener('load', () => {
   if(!roomCode && lastScreen==='rules') go('rules');
   let restoreOnReload=false;
   try { restoreOnReload=sessionStorage.getItem('obyasnyarium_restore_on_reload')==='1'; } catch(e) {}
-  const wasInOnlineRoom = /^online-(lobby|pass|word|guess|result|score|finish|public-text-game)$/.test(lastScreen);
+  const wasInOnlineRoom = /^(online-(lobby|pass|word|guess|result|score|finish)|public-text-game)$/.test(lastScreen);
   const inviteMatchesSavedRoom = !!(roomCode && saved && String(saved.code)===String(roomCode));
   // Восстанавливаемся по сохранённым данным даже если маркер вкладки потерялся.
   // Ссылку-приглашение в другую комнату не перехватываем.

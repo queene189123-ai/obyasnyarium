@@ -1400,6 +1400,14 @@ async function onlineSave(){
 async function onlineFinishGame(){
   if(!online.state || online.playerId!==online.hostId) return;
   if(!confirm('Закончить игру и показать итоговые очки всем игрокам?')) return;
+  if(online.state.text_mode && online.state.visibility==='public'){
+    const {data,error}=await supabaseClient.rpc('finish_public_text_game',{
+      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_expected_version:online.version
+    });
+    if(error){alert('Не удалось завершить игру: '+error.message);await onlineSync();return;}
+    if(data){online.state=data.game_state||online.state;online.version=data.version||online.version+1;updateOnlineHud();onlineRenderState();}
+    return;
+  }
   const previousStatus=online.state.status;
   online.state.status='finished';
   const saved=await onlineSave();

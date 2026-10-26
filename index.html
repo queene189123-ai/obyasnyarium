@@ -165,6 +165,18 @@ button:focus-visible, input:focus-visible, select:focus-visible { outline:3px so
 .coming-soon-icon { font-size: 64px; margin-bottom: 16px; }
 .small-text { font-size: 14px; color: var(--muted); text-align: center; margin-top: 20px; line-height: 1.5; }
 
+.global-chat { width:100%; max-width:420px; margin:18px 0 4px; padding:16px; border:1px solid #eee1d4; border-radius:18px; background:rgba(255,255,255,.88); box-shadow:var(--shadow); text-align:left; }
+.global-chat-heading { font-size:18px; font-weight:750; text-align:center; }
+.global-chat-subtitle { color:var(--muted); font-size:12px; text-align:center; margin:4px 0 12px; }
+.global-chat-messages { display:flex; flex-direction:column; gap:8px; height:190px; overflow-y:auto; overscroll-behavior:contain; padding:10px; background:#fbf6ef; border-radius:12px; }
+.global-chat-message { font-size:13px; line-height:1.4; overflow-wrap:anywhere; }
+.global-chat-message strong { color:var(--accent-dark); margin-right:5px; }
+.global-chat-form { display:grid; grid-template-columns:minmax(0,1fr) minmax(0,1.6fr); gap:8px; margin-top:10px; }
+.global-chat-form .input { width:100%; min-width:0; margin:0; }
+.global-chat-form button { grid-column:1 / -1; margin:0; }
+.global-chat-status { min-height:16px; font-size:12px; color:var(--muted); text-align:center; margin-top:5px; }
+@media (max-width:420px) { .global-chat { padding:12px; } .global-chat-messages { height:165px; } }
+
 .word-screen { width:100%; max-width:360px; }
 .word { font-size:clamp(30px, 9vw, 48px); margin-bottom:20px; }
 .letter-box { margin-bottom:20px; }
@@ -333,6 +345,7 @@ body {
 <script>
 window.addEventListener('load', () => {
   loadGameSettings();
+  initGlobalChat();
   const params=new URLSearchParams(location.search);const roomCode=params.get("room");if(roomCode&&/^\d{5}$/.test(roomCode)){const input=document.getElementById("online-join-code");if(input)input.value=roomCode;go("online-join");}
   let saved=null;
   try { saved=JSON.parse(localStorage.getItem(ONLINE_SESSION_KEY)||'null'); } catch(e) {}
@@ -359,6 +372,17 @@ window.addEventListener('load', () => {
   <div class="subtitle">Продемонстрируй словарный запас и смекалку!</div>
   <button class="btn btn-primary" onclick="go('offline-setup')">Играть офлайн</button>
   <button class="btn btn-secondary" onclick="go('online')">Играть онлайн</button>
+  <section class="global-chat" aria-label="Общий чат игроков">
+    <div class="global-chat-heading">💬 Общий чат</div>
+    <div class="global-chat-subtitle">Позови игроков: «Пойдёмте играть!»</div>
+    <div id="global-chat-messages" class="global-chat-messages" aria-live="polite"><p class="small-text">Загружаем сообщения…</p></div>
+    <form class="global-chat-form" onsubmit="sendGlobalChatMessage(event)">
+      <input class="input" id="global-chat-name" placeholder="Твой ник" maxlength="20" autocomplete="nickname" aria-label="Твой ник">
+      <input class="input" id="global-chat-input" placeholder="Напиши сообщение…" maxlength="240" aria-label="Сообщение">
+      <button class="btn btn-primary" id="global-chat-send" type="submit">Отправить</button>
+    </form>
+    <div id="global-chat-status" class="global-chat-status" role="status"></div>
+  </section>
   <button class="btn btn-ghost sound-toggle" id="sound-toggle" onclick="toggleSounds()">🔊 Звуки: включены</button>
   <div class="small-text">Без однокоренных слов.<br>Можно использовать иностранные слова и жесты.<br><br>Более 7 000 слов, мемов и забавных сочетаний.</div>
 </div>
@@ -425,9 +449,22 @@ window.addEventListener('load', () => {
   <div class="title" style="font-size:32px">Онлайн-режим</div>
   <div class="subtitle">Играйте с разных телефонов</div>
   <div class="center-stack">
-    <button class="btn btn-primary" onclick="onlineCreateRoom()">Создать комнату</button>
-    <button class="btn btn-secondary" onclick="showOnlineJoin()">Войти в комнату</button>
+    <button class="btn btn-primary" onclick="go('public-rooms');listPublicRooms()">Играть — найти открытую комнату</button>
+    <button class="btn btn-secondary" onclick="onlinePrepareCreate('private')">Играть с друзьями</button>
+    <button class="btn btn-ghost" onclick="showOnlineJoin()">Войти по коду или ссылке</button>
     <button class="btn btn-ghost" onclick="go('home')">← На главную</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-public-rooms">
+  <div class="title" style="font-size:30px">Открытые комнаты</div>
+  <div class="subtitle">Выбери комнату и присоединяйся к незнакомым игрокам</div>
+  <div class="center-stack">
+    <input class="input" id="public-room-player-name" placeholder="Твоё имя" maxlength="20" autocomplete="nickname">
+    <div id="public-room-list" class="scoreboard" aria-live="polite"><p class="small-text">Загружаем комнаты…</p></div>
+    <button class="btn btn-secondary" onclick="listPublicRooms()">↻ Обновить список</button>
+    <button class="btn btn-primary" onclick="onlinePrepareCreate('public')">Создать открытую комнату</button>
+    <button class="btn btn-ghost" onclick="go('online')">← Назад</button>
   </div>
 </div>
 
@@ -445,7 +482,7 @@ window.addEventListener('load', () => {
 
 <div class="screen" id="screen-online-name">
   <div class="title" style="font-size:32px">Создать комнату</div>
-  <div class="subtitle">Введи своё имя</div>
+  <div class="subtitle" id="online-create-subtitle">Введи своё имя</div>
   <div class="center-stack">
     <input class="input" id="online-host-name" placeholder="Твоё имя" maxlength="20" onkeydown="if(event.key==='Enter')onlineCreateRoom()">
     <button class="btn btn-primary" onclick="onlineCreateRoom()">Создать</button>
@@ -484,6 +521,25 @@ window.addEventListener('load', () => {
     <div class="reaction-hints" id="online-reaction-hints"></div>
     <button class="btn btn-primary" onclick="onlineShowGuess()">Угадали ✅</button>
     <button class="btn btn-ghost" onclick="onlineReplaceWord()">Заменить ↻</button>
+  </div>
+</div>
+
+<div class="screen" id="screen-public-text-game">
+  <div class="title" style="font-size:28px">Открытая игра</div>
+  <div class="subtitle" id="public-text-status">Объясняй и угадывай в чате</div>
+  <div class="scoreboard" id="public-text-scores"></div>
+  <div class="word-screen" id="public-text-round" style="width:100%;max-width:520px">
+    <div class="word-label" id="public-text-round-label">Твой ход</div>
+    <div class="word" id="public-text-answer"></div>
+    <div class="letter-box" id="public-text-letter"></div>
+    <button class="btn btn-primary" id="public-text-start-btn" onclick="onlineTextStartRound()" style="display:none">Получить слово</button>
+    <button class="btn btn-primary" id="public-text-next-btn" onclick="onlineTextNextRound()" style="display:none">Следующий раунд →</button>
+  </div>
+  <div class="scoreboard" id="public-text-messages" aria-live="polite" style="width:100%;max-width:520px;max-height:260px;overflow:auto"></div>
+  <div class="center-stack" style="width:100%;max-width:520px">
+    <input class="input" id="public-text-message" placeholder="Слово на разрешённую букву…" maxlength="80" onkeydown="if(event.key==='Enter')onlineTextSend()">
+    <button class="btn btn-primary" id="public-text-send-btn" onclick="onlineTextSend()">Отправить</button>
+    <button class="btn btn-ghost" onclick="onlineLeaveRoom()">Выйти из комнаты</button>
   </div>
 </div>
 
@@ -1011,10 +1067,254 @@ function resetOfflineGame() {
 function escapeHtml(s) { return s.replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function escapeAttr(s) { return s.replace(/'/g, "\'"); }
 
+
+// ===== PUBLIC TEXT GAME =====
+let publicTextLastMessageId = 0;
+let publicTextMessagesBusy = false;
+function renderPublicTextGame(){
+  const s=online.state; if(!s) return;
+  const current=onlineCurrentPlayer();
+  const isExplainer=current?.id===online.playerId;
+  const status=document.getElementById('public-text-status');
+  const label=document.getElementById('public-text-round-label');
+  const answer=document.getElementById('public-text-answer');
+  const letter=document.getElementById('public-text-letter');
+  const start=document.getElementById('public-text-start-btn');
+  const next=document.getElementById('public-text-next-btn');
+  const input=document.getElementById('public-text-message');
+  const send=document.getElementById('public-text-send-btn');
+  document.getElementById('public-text-scores').innerHTML=getOnlinePlayers().map(p=>'<div class="score-row"><span class="pname">'+escapeHtml(p.name)+'</span><span class="pscore">'+(p.score||0)+'</span></div>').join('');
+  start.style.display='none'; next.style.display='none'; input.style.display='block'; send.style.display='block';
+  if(s.status==='pass'){
+    status.textContent='Комната готова. Ведущий начинает раунд.';
+    label.textContent=isExplainer?'Твой ход':'Сейчас ходит '+(current?.name||'игрок');
+    answer.textContent=''; letter.textContent='';
+    start.style.display=isExplainer?'block':'none';
+    input.disabled=true; send.disabled=true;
+  }else if(s.status==='word'){
+    status.textContent=isExplainer?'Объясняй слово сообщениями в чате':'Угадывай слово по подсказкам в чате';
+    label.textContent=isExplainer?'Твоё слово':'Загаданное слово';
+    answer.textContent=isExplainer?(s.currentWord||'Слово загружается…'):'???';
+    letter.textContent=s.currentLetter||'';
+    input.placeholder=isExplainer?'Напиши слово на букву '+(s.currentLetter||'…'):'Введи свой вариант ответа';
+    input.disabled=false; send.disabled=false;
+  }else if(s.status==='text_result'){
+    const guesser=getOnlinePlayers().find(p=>p.id===s.selectedGuesserId);
+    status.textContent=(guesser?.name||'Игрок')+' угадал слово!';
+    label.textContent='Правильный ответ';
+    answer.textContent=s.currentWord||'Ответ раскрыт';
+    letter.textContent='';
+    next.style.display=isExplainer?'block':'none';
+    input.disabled=true; send.disabled=true;
+  }else if(s.status==='finished'){
+    status.textContent='Игра завершена';
+    label.textContent='Итоговые очки';
+    answer.textContent='';
+    input.disabled=true;send.disabled=true;
+  }
+}
+async function onlineTextStartRound(){
+  if(onlineCurrentPlayer()?.id!==online.playerId || online.state?.status!=='pass') return;
+  onlinePickWord();
+  online.state.text_mode=true;
+  await onlineSave();
+  await onlineTextLoadMessages(true);
+}
+async function onlineTextNextRound(){
+  if(onlineCurrentPlayer()?.id!==online.playerId || online.state?.status!=='text_result') return;
+  const used=new Set(online.state.usedWords||[]);
+  const word=chooseNextWord(used,online.state.currentWord); used.add(word);
+  const letters=Object.keys(REACTION_HINTS).filter(l=>l!==word[0].toUpperCase() && l!==online.state.currentLetter);
+  const letter=letters[Math.floor(Math.random()*letters.length)];
+  const {data,error}=await supabaseClient.rpc('advance_public_text_round',{
+    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,
+    p_expected_version:online.version,p_word:word,p_letter:letter
+  });
+  if(error){alert('Не удалось начать следующий раунд: '+error.message);await onlineSync();return;}
+  if(data){online.state=data.game_state||online.state;online.version=data.version||online.version+1;saveOnlineSession();updateOnlineHud();onlineRenderState();}
+  await onlineTextLoadMessages(true);
+}
+async function onlineTextSend(){
+  const input=document.getElementById('public-text-message');
+  const message=(input.value||'').trim();
+  if(!message || input.disabled || !online.roomId) return;
+  input.value='';
+  const {data,error}=await supabaseClient.rpc('send_public_text_message',{
+    p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_message:message
+  });
+  if(error){
+    const msg=error.message||'';
+    const friendly=msg.includes('WRONG_LETTER')?'Начни сообщение с разрешённой буквы.':
+      msg.includes('CANNOT_SEND_ANSWER')?'Ведущий не может отправить загаданное слово.':
+      msg.includes('RATE_LIMITED')?'Слишком часто. Подожди секунду.':
+      msg.includes('ROUND_NOT_ACTIVE')?'Раунд уже закончился. Обновляем игру.':'Не удалось отправить: '+msg;
+    if(!msg.includes('RATE_LIMITED')) alert(friendly);
+    await onlineSync();return;
+  }
+  await onlineTextLoadMessages(false);
+  if(data?.correct) await onlineSync();
+}
+async function onlineTextLoadMessages(reset){
+  if(!online.roomId || !online.playerToken || publicTextMessagesBusy) return;
+  publicTextMessagesBusy=true;
+  try{
+    if(reset){publicTextLastMessageId=0;document.getElementById('public-text-messages').innerHTML='';}
+    const {data,error}=await supabaseClient.rpc('get_public_text_messages',{
+      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_after_id:publicTextLastMessageId
+    });
+    if(error){console.warn('Не удалось получить чат открытой комнаты:',error.message);return;}
+    const box=document.getElementById('public-text-messages');
+    (data||[]).forEach(m=>{
+      publicTextLastMessageId=Math.max(publicTextLastMessageId,Number(m.id)||0);
+      const row=document.createElement('div');row.className='score-row';
+      const name=document.createElement('span');name.className='pname';name.textContent=m.message_type==='system'?'🎉 '+m.player_name:m.player_name;
+      const body=document.createElement('span');body.className='pscore';body.style.maxWidth='70%';body.style.whiteSpace='normal';body.textContent=m.message;
+      row.append(name,body);box.appendChild(row);
+    });
+    box.scrollTop=box.scrollHeight;
+  }finally{publicTextMessagesBusy=false;}
+}
+
 // ===== ONLINE: SUPABASE =====
 const SUPABASE_URL = 'https://kfdsvcrlkivxgvueozzv.supabase.co';
 const SUPABASE_KEY = 'sb_publishable_dTLYc8QLK1Oradhoe9XZuA_JWz7Alhl';
 const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+// ===== ОБЩИЙ ЧАТ НА ГЛАВНОЙ =====
+let globalChatLastId = 0;
+let globalChatBusy = false;
+let globalChatTimer = null;
+function globalChatSetStatus(message, isError=false) {
+  const el=document.getElementById('global-chat-status');
+  if(el){el.textContent=message||'';el.style.color=isError?'#b42318':'var(--muted)';}
+}
+function globalChatAddMessage(item, prepend=false) {
+  const box=document.getElementById('global-chat-messages');
+  if(!box || box.querySelector('[data-message-id="'+item.id+'"]')) return;
+  const row=document.createElement('div');
+  row.className='global-chat-message'; row.dataset.messageId=String(item.id);
+  const name=document.createElement('strong'); name.textContent=(item.nickname||'Игрок')+':';
+  const body=document.createElement('span'); body.textContent=item.message||'';
+  row.append(name,body);
+  if(prepend) box.prepend(row); else box.appendChild(row);
+}
+async function refreshGlobalChat(initial=false) {
+  if(globalChatBusy) return;
+  const box=document.getElementById('global-chat-messages');
+  if(!box) return;
+  globalChatBusy=true;
+  try {
+    const {data,error}=await supabaseClient.rpc('get_global_chat_messages',{p_after_id:initial?0:globalChatLastId});
+    if(error) throw error;
+    if(initial) { box.innerHTML=''; globalChatLastId=0; }
+    const messages=(data||[]).sort((a,b)=>Number(a.id)-Number(b.id));
+    messages.forEach(m=>{globalChatAddMessage(m);globalChatLastId=Math.max(globalChatLastId,Number(m.id)||0);});
+    while(box.children.length>50) box.removeChild(box.firstElementChild);
+    if(initial || messages.length) box.scrollTop=box.scrollHeight;
+    if(initial && !messages.length) {
+      const empty=document.createElement('p');empty.className='small-text';empty.style.margin='auto';empty.textContent='Пока тихо. Позови всех играть первым!';
+      box.appendChild(empty);
+    }
+    if(messages.length) { const empty=box.querySelector('.small-text'); if(empty) empty.remove(); }
+    globalChatSetStatus('');
+  } catch(e) {
+    console.warn('Общий чат:',e?.message||e);
+    if(initial) { box.innerHTML=''; const msg=document.createElement('p');msg.className='small-text';msg.textContent='Чат временно недоступен. Попробуй обновить страницу.';box.appendChild(msg); }
+    globalChatSetStatus('Не удалось загрузить чат.',true);
+  } finally { globalChatBusy=false; }
+}
+async function sendGlobalChatMessage(event) {
+  if(event) event.preventDefault();
+  const nameEl=document.getElementById('global-chat-name');
+  const input=document.getElementById('global-chat-input');
+  const button=document.getElementById('global-chat-send');
+  const nickname=(nameEl?.value||'').trim().slice(0,20);
+  const message=(input?.value||'').trim();
+  if(!nickname){globalChatSetStatus('Сначала введи ник.',true);nameEl?.focus();return;}
+  if(!message){globalChatSetStatus('Напиши сообщение.',true);input?.focus();return;}
+  if(message.length>240){globalChatSetStatus('Максимум 240 символов.',true);return;}
+  try { localStorage.setItem('obyasnyarium_global_chat_nickname',nickname); } catch(e) {}
+  if(button) button.disabled=true;
+  globalChatSetStatus('Отправляем…');
+  try {
+    const {error}=await supabaseClient.rpc('send_global_chat_message',{p_nickname:nickname,p_message:message});
+    if(error) {
+      const msg=String(error.message||'');
+      if(msg.includes('RATE_LIMITED')) throw new Error('Не так быстро — подожди несколько секунд.');
+      throw error;
+    }
+    input.value='';
+    await refreshGlobalChat(false);
+    globalChatSetStatus('Отправлено');
+    input.focus();
+  } catch(e) {
+    console.warn('Отправка общего сообщения:',e?.message||e);
+    globalChatSetStatus(e.message==='Failed to fetch'?'Нет соединения. Проверь интернет.':(e.message||'Не удалось отправить сообщение.'),true);
+  } finally { if(button) button.disabled=false; }
+}
+function initGlobalChat() {
+  const nameEl=document.getElementById('global-chat-name');
+  try { const saved=localStorage.getItem('obyasnyarium_global_chat_nickname'); if(nameEl && saved && !nameEl.value) nameEl.value=saved; } catch(e) {}
+  refreshGlobalChat(true);
+  if(globalChatTimer) clearInterval(globalChatTimer);
+  globalChatTimer=setInterval(()=>{
+    if(document.getElementById('screen-home')?.classList.contains('active')) refreshGlobalChat(false);
+  },5000);
+}
+let onlineVisibility = 'private';
+let publicRoomsRefreshTimer = null;
+
+function onlinePrepareCreate(visibility){
+  onlineVisibility = visibility === 'public' ? 'public' : 'private';
+  const subtitle = document.getElementById('online-create-subtitle');
+  if(subtitle) subtitle.textContent = onlineVisibility === 'public'
+    ? 'Открытая комната — её увидят другие игроки'
+    : 'Приватная комната — приглашай друзей по ссылке';
+  go('online-name');
+}
+async function listPublicRooms(){
+  const box = document.getElementById('public-room-list');
+  if(!box) return;
+  box.innerHTML = '<p class="small-text">Ищем активные комнаты…</p>';
+  const {data,error} = await supabaseClient.rpc('list_public_rooms');
+  if(error){
+    box.innerHTML = '<p class="small-text">Список пока недоступен. Возможно, обновление базы ещё не применено.</p>';
+    console.warn('list_public_rooms:', error.message);
+    return;
+  }
+  if(!data || !data.length){
+    box.innerHTML = '<p class="small-text">Пока нет открытых комнат. Создай первую — к тебе смогут присоединиться другие игроки.</p>';
+    return;
+  }
+  box.innerHTML = '';
+  data.forEach(room=>{
+    const row=document.createElement('div');
+    row.className='score-row';
+    const names=Array.isArray(room.player_names) ? room.player_names : [];
+    const count=Number(room.player_count)||0;
+    row.innerHTML='<span class="rank">🎮</span><span class="pname"></span><span class="pscore"></span>';
+    row.querySelector('.pname').textContent=names.join(', ') || 'Открытая комната';
+    row.querySelector('.pscore').textContent=count+'/8';
+    row.style.cursor='pointer';
+    row.setAttribute('role','button');
+    row.tabIndex=0;
+    const enter=()=>{
+      const name=(document.getElementById('public-room-player-name')?.value||'').trim().slice(0,20);
+      if(!name){document.getElementById('public-room-player-name')?.focus();alert('Сначала введи своё имя.');return;}
+      document.getElementById('online-join-name').value=name;
+      document.getElementById('online-join-code').value=room.room_code;
+      go('online-join');
+    };
+    row.addEventListener('click',enter);
+    row.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){e.preventDefault();enter();}});
+    box.appendChild(row);
+  });
+  if(publicRoomsRefreshTimer) clearInterval(publicRoomsRefreshTimer);
+  publicRoomsRefreshTimer=setInterval(()=>{
+    if(document.getElementById('screen-public-rooms')?.classList.contains('active')) listPublicRooms();
+    else { clearInterval(publicRoomsRefreshTimer); publicRoomsRefreshTimer=null; }
+  },10000);
+}
 
 let online = { roomId:null, code:null, playerId:null, playerToken:null, name:'', hostId:null, pollTimer:null, pollBusy:false, version:0, state:null, connectionLost:false };
 
@@ -1031,7 +1331,7 @@ async function onlineCreateRoom(){
   online.playerToken = makePlayerToken();
   online.name = name;
   online.hostId = online.playerId;
-  const initialState = { status:'lobby', players:[{id:online.playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
+  const initialState = { status:'lobby', visibility:onlineVisibility, players:[{id:online.playerId,name,score:0}], currentIdx:0, round:1, currentWord:'', currentLetter:'', usedWords:[] };
   let created = null;
   for(let i=0;i<10;i++){
     const code = makeRoomCode();
@@ -1047,6 +1347,7 @@ async function onlineCreateRoom(){
   if(!created){ alert('Не удалось подобрать код комнаты. Попробуй ещё раз.'); return; }
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version || 0;
+  onlineVisibility = 'private';
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
 }
 
@@ -1153,8 +1454,10 @@ async function restoreOnlineSession(manual=false){
 
 function onlineSubscribe(){
   if(online.pollTimer) clearInterval(online.pollTimer);
+  if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   online.pollBusy=false;
   online.pollTimer=setInterval(onlineSync, 1300);
+  online.textMessageTimer=setInterval(()=>{if(online.state?.text_mode && online.roomId) onlineTextLoadMessages(false);},1500);
   if(!online.visibilityHandler){online.visibilityHandler=()=>{if(document.visibilityState==='visible')onlineSync();};document.addEventListener('visibilitychange',online.visibilityHandler);window.addEventListener('online',()=>{online.connectionLost=false;onlineSync();});}
   onlineSync();
 }
@@ -1203,6 +1506,14 @@ async function onlineSave(){
 async function onlineFinishGame(){
   if(!online.state || online.playerId!==online.hostId) return;
   if(!confirm('Закончить игру и показать итоговые очки всем игрокам?')) return;
+  if(online.state.text_mode && online.state.visibility==='public'){
+    const {data,error}=await supabaseClient.rpc('finish_public_text_game',{
+      p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken,p_expected_version:online.version
+    });
+    if(error){alert('Не удалось завершить игру: '+error.message);await onlineSync();return;}
+    if(data){online.state=data.game_state||online.state;online.version=data.version||online.version+1;updateOnlineHud();onlineRenderState();}
+    return;
+  }
   const previousStatus=online.state.status;
   online.state.status='finished';
   const saved=await onlineSave();
@@ -1254,18 +1565,21 @@ function renderOnlineLobby(){
     row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}${p.id===online.hostId?' 👑':''}</span><span class="pscore">${p.score||0}</span>`;
     box.appendChild(row);
   });
-  document.getElementById('online-start-btn').style.display=online.playerId===online.hostId?'block':'none';
+  document.getElementById('online-start-btn').style.display=online.playerId===online.hostId && getOnlinePlayers().length>=2?'block':'none';
 }
 
 async function onlineStartGame(){
   if(online.playerId!==online.hostId) return;
+  if(!online.state || !Array.isArray(online.state.players) || online.state.players.length<2) { alert('Нужно минимум два игрока.'); return; }
   online.state.status='pass'; online.state.currentIdx=0; online.state.round=1; online.state.currentWord=''; online.state.currentLetter=''; online.state.usedWords=[];
+  if(online.state.visibility==='public') online.state.text_mode=true;
   online.state.players.forEach(p=>p.score=0);
   await onlineSave();
 }
 
 function onlineRenderState(){
   const s=online.state; if(!s) return;
+  if(s.text_mode && s.visibility==='public'){ renderPublicTextGame(); go('public-text-game'); return; }
   if(s.status==='lobby'){ document.body.dataset.confettiRoom=''; renderOnlineLobby(); go('online-lobby'); return; }
   if(s.status==='pass'){ renderOnlinePass(); go('online-pass'); return; }
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
@@ -1302,6 +1616,7 @@ function onlinePickWord(){
 async function onlineShowWord(){
   if(onlineCurrentPlayer()?.id!==online.playerId) return;
   onlinePickWord(); await onlineSave();
+  if(online.state?.text_mode && online.state?.visibility==='public') onlineTextLoadMessages(true);
 }
 
 function renderOnlineWord(){
@@ -1350,6 +1665,7 @@ function renderOnlineScore(){
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
 async function onlineLeaveRoom(){
+  if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   if(online.roomId && online.playerToken){
     const {error}=await supabaseClient.rpc('leave_room', {
       p_room_id:online.roomId, p_player_id:online.playerId, p_player_token:online.playerToken

@@ -54,7 +54,11 @@ const TIMEOUT = 20000;
 
   try {
     await enterOnline(host);
-    await host.getByRole('button', { name: 'Создать комнату' }).click();
+    await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+    await host.locator('#screen-public-rooms.active').waitFor();
+    await host.locator('#public-room-list').waitFor();
+    await host.getByRole('button', { name: '← Назад' }).click();
+    await host.getByRole('button', { name: 'Играть с друзьями' }).click();
     await host.locator('#online-host-name').fill('CI Host');
     await host.getByRole('button', { name: 'Создать', exact: true }).click();
     await host.locator('#screen-online-lobby.active').waitFor();
@@ -66,7 +70,7 @@ const TIMEOUT = 20000;
     if (!/^\d{5}$/.test(code)) throw new Error('Host received invalid room code: ' + code);
 
     await enterOnline(guest);
-    await guest.getByRole('button', { name: 'Войти в комнату' }).click();
+    await guest.getByRole('button', { name: 'Войти по коду или ссылке' }).click();
     await guest.locator('#online-join-name').fill('CI Guest');
     await guest.locator('#online-join-code').fill(code);
     await guest.getByRole('button', { name: 'Войти', exact: true }).click();

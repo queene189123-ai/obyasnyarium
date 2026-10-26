@@ -1,6 +1,6 @@
 const { chromium } = require('playwright');
 
-const BASE_URL = 'https://queene189123-ai.github.io/obyasnyarium/';
+const BASE_URL = process.env.BASE_URL || 'https://queene189123-ai.github.io/obyasnyarium/';
 const TIMEOUT = 20000;
 
 (async () => {

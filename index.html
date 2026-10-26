@@ -398,12 +398,20 @@ window.addEventListener('load', () => {
   if(btn && saved && saved.roomId && saved.playerToken) btn.style.display='block';
   let lastScreen='home';
   try { lastScreen=sessionStorage.getItem('obyasnyarium_last_screen_v1')||'home'; } catch(e) {}
-  // При обновлении сохраняем текущий экран; явная ссылка на комнату всегда важнее.
+  // При обновлении сохраняем текущий экран; явная ссылка в другую комнату важнее старой сессии.
   if(!roomCode && lastScreen==='rules') go('rules');
-  // Онлайн-комнату восстанавливаем только в текущей вкладке и если пользователь не на экране правил.
   let restoreOnReload=false;
   try { restoreOnReload=sessionStorage.getItem('obyasnyarium_restore_on_reload')==='1'; } catch(e) {}
-  if(restoreOnReload && !roomCode && lastScreen!=='rules' && saved && saved.roomId && saved.playerToken) restoreOnlineSession();
+  const wasInOnlineRoom = /^online-(lobby|pass|word|guess|result|score|finish|public-text-game)$/.test(lastScreen);
+  const inviteMatchesSavedRoom = !!(roomCode && saved && String(saved.code)===String(roomCode));
+  // Восстанавливаемся по сохранённым данным даже если маркер вкладки потерялся.
+  // Ссылку-приглашение в другую комнату не перехватываем.
+  const shouldRestoreOnline = saved && saved.roomId && saved.playerToken && saved.playerId &&
+    lastScreen!=='rules' && (
+      (!roomCode && (restoreOnReload || wasInOnlineRoom)) ||
+      inviteMatchesSavedRoom
+    );
+  if(shouldRestoreOnline) restoreOnlineSession();
   // Офлайн-игру восстанавливаем на её игровых экранах, но не поверх экрана правил.
   let restoreOfflineOnReload=false;
   try { restoreOfflineOnReload=sessionStorage.getItem('obyasnyarium_offline_restore_on_reload')==='1'; } catch(e) {}

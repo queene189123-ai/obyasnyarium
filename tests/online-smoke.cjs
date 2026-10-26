@@ -53,11 +53,48 @@ const TIMEOUT = 20000;
   }
 
   try {
+    // Exercise the new public-room path end-to-end before checking the existing private flow.
     await enterOnline(host);
     await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
     await host.locator('#screen-public-rooms.active').waitFor();
-    await host.locator('#public-room-list').waitFor();
-    await host.getByRole('button', { name: '← Назад' }).click();
+    await host.locator('#public-room-player-name').fill('CI Public Host');
+    await host.getByRole('button', { name: 'Создать открытую комнату' }).click();
+    await host.locator('#online-host-name').fill('CI Public Host');
+    await host.getByRole('button', { name: 'Создать', exact: true }).click();
+    await host.locator('#screen-online-lobby.active').waitFor();
+    await assertNoHorizontalOverflow(host, 'public room lobby');
+
+    await enterOnline(guest);
+    await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+    await guest.locator('#screen-public-rooms.active').waitFor();
+    await guest.locator('#public-room-player-name').fill('CI Public Guest');
+    await guest.getByText('CI Public Host', { exact: true }).waitFor();
+    await guest.getByText('CI Public Host', { exact: true }).click();
+    await guest.locator('#screen-online-join.active').waitFor();
+    await guest.locator('#online-join-name').fill('CI Public Guest');
+    await guest.getByRole('button', { name: 'Войти', exact: true }).click();
+    await guest.locator('#screen-online-lobby.active').waitFor();
+    await host.getByText('CI Public Guest', { exact: true }).waitFor();
+
+    await host.getByRole('button', { name: 'Начать игру' }).click();
+    await host.locator('#screen-public-text-game.active').waitFor();
+    await host.getByRole('button', { name: 'Получить слово' }).click();
+    await host.waitForFunction(() => online.state?.status === 'word' && !!online.state.currentWord);
+    const answer = await host.evaluate(() => online.state.currentWord);
+    await guest.locator('#public-text-message').fill(answer);
+    await guest.getByRole('button', { name: 'Отправить', exact: true }).click();
+    await host.waitForFunction(() => online.state?.status === 'text_result');
+    await guest.waitForFunction(() => online.state?.status === 'text_result');
+    await host.waitForFunction(() => online.state.players.every(player => (player.score || 0) === 1));
+    await host.getByRole('button', { name: 'Следующий раунд →' }).click();
+    await guest.waitForFunction(() => online.state?.status === 'word' && online.state.currentIdx === 1);
+    console.log('PASS: public room discovery, joining, answer detection, scoring and next-round rotation.');
+
+    await cleanup(guest);
+    await cleanup(host);
+
+    // Regression check: the pre-existing private room flow still works.
+    await enterOnline(host);
     await host.getByRole('button', { name: 'Играть с друзьями' }).click();
     await host.locator('#online-host-name').fill('CI Host');
     await host.getByRole('button', { name: 'Создать', exact: true }).click();

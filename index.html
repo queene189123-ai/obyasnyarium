@@ -519,6 +519,8 @@ async function shareSite() {
 <noscript><div><img src="https://mc.yandex.ru/watch/113805493" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
+<link rel="preconnect" href="https://s.adlook.tv">
+
 </head>
 <body>
 <div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
@@ -571,7 +573,23 @@ async function shareSite() {
   <div class="counter-row"><span>Офлайн-лобби создано</span><strong id="counter-offline-lobbies">—</strong></div>
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
+
+<!-- ===== Adlook: начало рекламного места «В контенте» ===== -->
+<div class="adlook-pc-wrapper" style="display:flex;flex-wrap:nowrap;justify-content:center;gap:5px;width:100%;max-width:1200px;margin:18px auto 0;min-height:225px;overflow-x:hidden;">
+  <div id="Adlk-1"></div>
+  <div id="Adlk-2"></div>
 </div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61u7aimjs73b61g5g" data-host="Adlk-1" data-target="pc"></script>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg620vaimjs73b61g60" data-host="Adlk-2" data-target="pc"></script>
+<div class="adlook-mob-wrapper" style="width:100%;padding:5px;box-sizing:border-box;min-height:235px;margin-top:18px;">
+  <div id="Adlk-mob"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg623naimjs73b61g6g" data-host="Adlk-mob" data-target="mob"></script>
+<!-- ===== Adlook: конец рекламного места «В контенте» ===== -->
+</div>
+
+
+
 
 <!-- ПРАВИЛА ИГРЫ -->
 <div class="screen" id="screen-rules">
@@ -1698,6 +1716,39 @@ function showOnlineJoin(){ go('online-join'); }
 function onlineShowName(){ go('online-name'); }
 let onlineVisibility = 'private';
 let publicRoomsRefreshTimer = null;
+const ONLINE_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+let onlineLastActivityAt = 0;
+let onlineIdleTimer = null;
+let onlineIdleExpired = false;
+let onlineActivityHandlersInstalled = false;
+function clearOnlineIdleTimer(){ if(onlineIdleTimer!==null){clearTimeout(onlineIdleTimer);onlineIdleTimer=null;} }
+function scheduleOnlineIdleCheck(){
+  clearOnlineIdleTimer();
+  if(!online.roomId || !online.playerToken || onlineIdleExpired || !onlineLastActivityAt)return;
+  const remaining=ONLINE_IDLE_TIMEOUT_MS-(Date.now()-onlineLastActivityAt);
+  onlineIdleTimer=setTimeout(()=>{
+    if(!online.roomId || !online.playerToken || onlineIdleExpired)return;
+    if(Date.now()-onlineLastActivityAt>=ONLINE_IDLE_TIMEOUT_MS){onlineIdleExpired=true;onlineLeaveRoom(true);}
+    else scheduleOnlineIdleCheck();
+  },Math.max(0,remaining));
+}
+function noteOnlineUserActivity(){
+  if(!online.roomId || !online.playerToken || onlineIdleExpired)return;
+  const now=Date.now();
+  const persist=now-onlineLastActivityAt>=10000;
+  onlineLastActivityAt=now;
+  if(persist)saveOnlineSession();
+  scheduleOnlineIdleCheck();
+}
+function startOnlineIdleTimer(){
+  if(!online.roomId || !online.playerToken)return;
+  if(!onlineLastActivityAt)onlineLastActivityAt=Date.now();
+  if(!onlineActivityHandlersInstalled){
+    onlineActivityHandlersInstalled=true;
+    ['pointerdown','keydown','touchstart','scroll','input'].forEach(eventName=>window.addEventListener(eventName,noteOnlineUserActivity,{passive:true}));
+  }
+  scheduleOnlineIdleCheck();
+}
 
 function onlinePrepareCreate(visibility){
   onlineVisibility = visibility === 'public' ? 'public' : 'private';
@@ -1742,6 +1793,7 @@ async function joinFixedRoom(roomNumber){
   online.playerId=playerId;online.playerToken=playerToken;online.name=name;
   online.roomId=data.id;online.code=data.code;online.hostId=data.host_id;
   online.state=data.game_state||{};online.version=data.version||0;online.fixedRoomNumber=roomNumber;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   try{localStorage.setItem('obyasnyarium_player_name',name);}catch(e){}
   saveOnlineSession();updateOnlineHud();onlineSubscribe();onlineRenderState();
 }
@@ -1773,6 +1825,7 @@ async function onlineCreateRoomInternal(){
   online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version ?? 0;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   onlineVisibility='private';
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
   trackSessionCounterEvent('lobby_created', 'online', 'lobby-' + created.id);
@@ -1825,6 +1878,7 @@ async function onlineJoinRoomInternal(){
   online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=data.id; online.code=data.code; online.hostId=data.host_id;
   online.state=joinedState; online.version=data.version ?? 0;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   // Remove the invitation parameter after a successful join so refreshing this tab restores the joined room.
   try { const cleanUrl=new URL(location.href); cleanUrl.searchParams.delete('room'); history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash); } catch(e) {}
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
@@ -1865,7 +1919,8 @@ function saveOnlineSession(){
   try {
     localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
       roomId:online.roomId, code:online.code, playerId:online.playerId,
-      playerToken:online.playerToken, name:online.name, hostId:online.hostId
+      playerToken:online.playerToken, name:online.name, hostId:online.hostId,
+      lastActivityAt:onlineLastActivityAt || Date.now()
     }));
     // Маркер живёт только в текущей вкладке: после обновления восстановим комнату,
     // а при новом открытии сайта покажем главный экран.
@@ -1917,6 +1972,7 @@ async function restoreOnlineSession(manual=false){
   online.pollBusy=false;
   const restoreGeneration=onlinePollGeneration;
   online={...online,...saved,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
+  onlineLastActivityAt=Number(saved.lastActivityAt)||Date.now();onlineIdleExpired=false;
   const isCurrentRestore=()=>restoreGeneration===onlinePollGeneration &&
     online.roomId===saved.roomId && online.playerId===saved.playerId && online.playerToken===saved.playerToken;
   updateOnlineHud();
@@ -1954,6 +2010,7 @@ let onlinePollGeneration = 0;
 let onlineVisibilityHandler = null;
 let onlineNetworkHandlersInstalled = false;
 function onlineSubscribe(){
+  startOnlineIdleTimer();
   if(online.pollTimer) clearInterval(online.pollTimer);
   if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   // Invalidates any request from a previous room/session subscription.
@@ -1963,7 +2020,11 @@ function onlineSubscribe(){
   online.textMessageTimer=setInterval(()=>{if(online.state?.text_mode && online.roomId) onlineTextLoadMessages(false);},1500);
   // Keep global browser listeners outside the replaceable room-session object.
   if(!onlineVisibilityHandler){
-    onlineVisibilityHandler=()=>{if(document.visibilityState==='visible' && online.roomId) onlineSync();};
+    onlineVisibilityHandler=()=>{
+      if(document.visibilityState!=='visible' || !online.roomId)return;
+      if(onlineLastActivityAt && Date.now()-onlineLastActivityAt>=ONLINE_IDLE_TIMEOUT_MS){if(!onlineIdleExpired){onlineIdleExpired=true;onlineLeaveRoom(true);}return;}
+      scheduleOnlineIdleCheck();onlineSync();
+    };
     document.addEventListener('visibilitychange',onlineVisibilityHandler);
   }
   if(!onlineNetworkHandlersInstalled){
@@ -2251,8 +2312,8 @@ async function onlineStartGame(){
 
 function onlineRenderState(){
   const s=online.state; if(!s) return;
-  if(s.text_mode && s.visibility==='public'){ renderPublicTextGame(); go('public-text-game'); return; }
   if(s.status==='lobby'){ document.body.dataset.confettiRoom=''; renderOnlineLobby(); go('online-lobby'); return; }
+  if(s.text_mode && s.visibility==='public'){ renderPublicTextGame(); go('public-text-game'); return; }
   if(s.status==='pass'){ renderOnlinePass(); go('online-pass'); return; }
   if(s.status==='word'){ renderOnlineWord(); go('online-word'); return; }
   if(s.status==='guess'){
@@ -2339,14 +2400,21 @@ function renderOnlineScore(){
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
 async function onlineLeaveRoom(){
+  const expired=onlineIdleExpired;
+  clearOnlineIdleTimer();
   if(isFixedPublicRoom()){
-    await supabaseClient.rpc('leave_fixed_room',{p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken});
+    const leaving={p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken};
+    supabaseClient.rpc('leave_fixed_room',leaving).then(({error})=>{if(error)console.warn('Не удалось очистить просроченную комнату:',error.message);}).catch(e=>console.warn('Не удалось очистить просроченную комнату:',e));
     if(fixedRoomChatTimer!==null){clearInterval(fixedRoomChatTimer);fixedRoomChatTimer=null;}
+    if(online.textMessageTimer)clearInterval(online.textMessageTimer);
     if(online.pollTimer)clearInterval(online.pollTimer);
     onlinePollGeneration++;
-    try{localStorage.removeItem(ONLINE_SESSION_KEY);}catch(e){}
+    try{localStorage.removeItem(ONLINE_SESSION_KEY);sessionStorage.removeItem('obyasnyarium_restore_on_reload');}catch(e){}
     online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
-    go('public-rooms');listPublicRooms();return;
+    onlineLastActivityAt=0;onlineIdleExpired=false;updateOnlineHud();
+    go('public-rooms');listPublicRooms();
+    if(expired)alert('Время ожидания истекло. Перезайдите в комнату.');
+    return;
   }
   if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   // Invalidate in-flight polls/saves immediately, before awaiting the server.
@@ -2368,9 +2436,21 @@ async function onlineLeaveRoom(){
     sessionStorage.removeItem('obyasnyarium_restore_on_reload');
   } catch(e) {}
   online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
+  onlineLastActivityAt=0;onlineIdleExpired=false;
   updateOnlineHud(); go('home');
+  if(expired)alert('Время ожидания истекло. Перезайдите в комнату.');
 }
 
 </script>
+
+<!-- ===== Adlook: начало общего кода — ставится один раз, на все страницы ===== -->
+<style>
+  @media (max-width: 949px) { .adlook-pc-wrapper { display: none !important; } }
+  @media (min-width: 950px) { .adlook-mob-wrapper { display: none !important; } }
+</style>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61rfaimjs73b61g50" data-align="rt" data-m-align="t"></script>
+<script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer data-delay-pc="200" data-delay-mob="300"></script>
+<!-- ===== Adlook: конец общего кода ===== -->
+
 </body>
 </html>

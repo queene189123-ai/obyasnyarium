@@ -30,7 +30,27 @@ const TIMEOUT = 20000;
 
   async function enterOnline(page) {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
-    await page.getByRole('button', { name: 'Играть онлайн' }).click();
+    // Start each test leg from a clean browser session; stale restore markers can
+    // otherwise reopen a previous lobby instead of showing the online menu.
+    await page.evaluate(() => {
+      try {
+        localStorage.removeItem('obyasnyarium_online_session_v1');
+        sessionStorage.removeItem('obyasnyarium_restore_on_reload');
+      } catch (_) {}
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
+    // Explicitly reset the visible screen as well: cleanup may leave a stale
+    // lobby screen in memory even after session markers have been cleared.
+    await page.evaluate(() => { if (typeof go === 'function') go('home'); });
+    await page.locator('#screen-home.active').waitFor();
+    // The home screen animates in; wait until its buttons stop moving.
+    await page.waitForTimeout(450);
+    const onlineButton = page.locator("#screen-home.active button[onclick=\"go('online')\"]");
+    await onlineButton.waitFor({ state: 'visible' });
+    await onlineButton.click();
+    await page.locator('#screen-online.active').waitFor();
+    // Let the screen transition finish before interacting with its controls.
+    await page.waitForTimeout(450);
   }
 
   async function assertNoHorizontalOverflow(page, label) {
@@ -45,30 +65,71 @@ const TIMEOUT = 20000;
 
   async function cleanup(page) {
     try {
+      // The game state is held in a private script scope; read the persisted session instead.
+      const session = await page.evaluate(() => {
+        try { return JSON.parse(localStorage.getItem('obyasnyarium_online_session_v1') || 'null'); }
+        catch (_) { return null; }
+      });
+      if (!session?.playerId || !session?.playerToken) return;
+      const fixed = await page.evaluate(async ({ roomId, code }) => {
+        const { data, error } = await supabaseClient.rpc('list_fixed_rooms');
+        if (error) return false;
+        return (data || []).some(room =>
+          room.id === roomId || String(room.code) === String(code)
+        );
+      }, session);
       if (await page.locator('#online-hud-leave').isVisible()) {
         await page.locator('#online-hud-leave').click();
+      } else if (fixed) {
+        await page.evaluate(async ({ roomId, playerId, playerToken }) => {
+          await supabaseClient.rpc('leave_fixed_room', {
+            p_room_id: roomId, p_player_id: playerId, p_player_token: playerToken
+          });
+        }, session);
+      }
+      if (fixed) {
+        await page.waitForFunction(async playerId => {
+          const { data, error } = await supabaseClient.rpc('list_fixed_rooms');
+          return !error && (data || []).every(room =>
+            !(room.players || []).some(player => player.id === playerId)
+          );
+        }, session.playerId, { timeout: TIMEOUT });
+      } else {
         await page.waitForTimeout(700);
       }
-    } catch (_) {}
+    } catch (error) {
+      console.warn('Cleanup warning:', error.message);
+    }
   }
 
   try {
     if (process.env.TEST_FIXED_ROOMS === '1') {
       // Exercise fixed room discovery, shared chat, readiness and automatic start.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Fixed Host');
-      await host.getByText('Комната 3', { exact: false }).waitFor();
-      await host.getByText(/Комната 3/).click();
-      await host.locator('#screen-online-lobby.active').waitFor();
+      const emptyRoom = host.locator('#public-room-list .score-row').filter({ hasText: 'ждём игроков' }).first();
+      await emptyRoom.waitFor();
+      const roomLabel = await emptyRoom.locator('.pname').innerText();
+      const roomNumber = roomLabel.split(/\s+/)[1];
+      if (!roomNumber) throw new Error('Could not determine an empty fixed room: ' + roomLabel);
+      await emptyRoom.click();
+      try {
+        await host.locator('#screen-online-lobby.active').waitFor({ timeout: 8000 });
+      } catch (error) {
+        console.error('FIXED ROOM JOIN DEBUG:', JSON.stringify({ activeScreens: await host.locator('.screen.active').evaluateAll(nodes => nodes.map(node => node.id)), body: (await host.locator('body').innerText()).slice(0, 1600), dialogs }));
+        throw error;
+      }
       await assertNoHorizontalOverflow(host, 'fixed room lobby');
 
       await enterOnline(guest);
-      await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await guest.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
-      await guest.getByText(/Комната 3/).click();
+      const hostRoom = guest.locator('#public-room-list .score-row').filter({ has: guest.locator('.pname').filter({ hasText: new RegExp('^Комната ' + roomNumber + ' —') }) });
+      await hostRoom.waitFor();
+      await hostRoom.click();
       await guest.locator('#screen-online-lobby.active').waitFor();
       await host.getByText('CI Fixed Guest', { exact: true }).waitFor();
 
@@ -81,7 +142,7 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Готов', exact: false }).click();
       await host.locator('#screen-public-text-game.active').waitFor();
       await guest.locator('#screen-public-text-game.active').waitFor();
-      await host.locator('#public-text-start-btn').waitFor({ state: 'visible' });
+      // Fixed rooms start automatically once every player is ready; there is no host-only start button.
       await guest.waitForFunction(() => online.state?.status === 'pass' && online.state?.text_mode === true);
       console.log('PASS: fixed rooms, shared chat, readiness and automatic game start.');
 
@@ -90,10 +151,10 @@ const TIMEOUT = 20000;
 
       // The room remains available, but the previous group's chat must be cleared.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Empty Room Check');
-      await host.getByText(/Комната 3/).click();
+      await host.locator('#public-room-list .score-row').filter({ hasText: roomLabel }).click();
       await host.locator('#screen-online-lobby.active').waitFor();
       await host.waitForTimeout(500);
       const emptyRoomChat = await host.locator('#fixed-room-chat').innerText();
@@ -105,7 +166,7 @@ const TIMEOUT = 20000;
     } else {
       // Legacy public-room regression check when running against the currently deployed build.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Public Host');
       await host.getByRole('button', { name: 'Создать открытую комнату' }).click();
@@ -115,7 +176,7 @@ const TIMEOUT = 20000;
       await assertNoHorizontalOverflow(host, 'public room lobby');
 
       await enterOnline(guest);
-      await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await guest.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Public Guest');
       await guest.getByText('CI Public Host', { exact: true }).waitFor();

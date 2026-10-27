@@ -19,7 +19,7 @@ begin
     from public.rooms r
     where r.code in ('10001','10002','10003')
       and r.game_state->>'fixed_room'='true'
-      and r.last_activity_at < now() - interval '30 minutes'
+      and coalesce(r.last_activity_at, 'epoch'::timestamptz) < now() - interval '30 minutes'
       and jsonb_array_length(coalesce(r.game_state->'players','[]'::jsonb)) > 0
     for update
   loop

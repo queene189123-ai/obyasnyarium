@@ -34,7 +34,7 @@ const TIMEOUT = 20000;
     // otherwise reopen a previous lobby instead of showing the online menu.
     await page.evaluate(() => {
       try {
-        localStorage.removeItem('obyasnyarium_online_session');
+        localStorage.removeItem('obyasnyarium_online_session_v1');
         sessionStorage.removeItem('obyasnyarium_restore_on_reload');
       } catch (_) {}
     });

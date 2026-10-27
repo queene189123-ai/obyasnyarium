@@ -91,7 +91,9 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
-      await guest.locator('#public-room-list .score-row').filter({ hasText: roomLabel }).click();
+      const hostRoom = guest.locator('#public-room-list .score-row').filter({ has: guest.locator('.pname').filter({ hasText: new RegExp('^Комната ' + roomNumber + ' —') }) });
+      await hostRoom.waitFor();
+      await hostRoom.click();
       await guest.locator('#screen-online-lobby.active').waitFor();
       await host.getByText('CI Fixed Guest', { exact: true }).waitFor();
 

@@ -73,8 +73,12 @@ const TIMEOUT = 20000;
       await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Fixed Host');
-      await host.getByText('Комната 1', { exact: false }).waitFor();
-      await host.getByText(/Комната 1/).click();
+      const emptyRoom = host.locator('#public-room-list .score-row').filter({ hasText: 'ждём игроков' }).first();
+      await emptyRoom.waitFor();
+      const roomLabel = await emptyRoom.locator('.pname').innerText();
+      const roomNumber = roomLabel.match(/Комната (\\d+)/)?.[1];
+      if (!roomNumber) throw new Error('Could not determine an empty fixed room: ' + roomLabel);
+      await emptyRoom.click();
       try {
         await host.locator('#screen-online-lobby.active').waitFor({ timeout: 8000 });
       } catch (error) {
@@ -87,7 +91,7 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
-      await guest.getByText(/Комната 1/).click();
+      await guest.getByText(new RegExp('Комната ' + roomNumber + '(?:\\\\s|$)')).click();
       await guest.locator('#screen-online-lobby.active').waitFor();
       await host.getByText('CI Fixed Guest', { exact: true }).waitFor();
 
@@ -112,7 +116,7 @@ const TIMEOUT = 20000;
       await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Empty Room Check');
-      await host.getByText(/Комната 1/).click();
+      await host.getByText(new RegExp('Комната ' + roomNumber + '(?:\\\\s|$)')).click();
       await host.locator('#screen-online-lobby.active').waitFor();
       await host.waitForTimeout(500);
       const emptyRoomChat = await host.locator('#fixed-room-chat').innerText();

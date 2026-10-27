@@ -70,7 +70,7 @@ const TIMEOUT = 20000;
     if (process.env.TEST_FIXED_ROOMS === '1') {
       // Exercise fixed room discovery, shared chat, readiness and automatic start.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Fixed Host');
       const emptyRoom = host.locator('#public-room-list .score-row').filter({ hasText: 'ждём игроков' }).first();
@@ -88,7 +88,7 @@ const TIMEOUT = 20000;
       await assertNoHorizontalOverflow(host, 'fixed room lobby');
 
       await enterOnline(guest);
-      await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await guest.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
       const hostRoom = guest.locator('#public-room-list .score-row').filter({ has: guest.locator('.pname').filter({ hasText: new RegExp('^Комната ' + roomNumber + ' —') }) });
@@ -115,7 +115,7 @@ const TIMEOUT = 20000;
 
       // The room remains available, but the previous group's chat must be cleared.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Empty Room Check');
       await host.locator('#public-room-list .score-row').filter({ hasText: roomLabel }).click();
@@ -130,7 +130,7 @@ const TIMEOUT = 20000;
     } else {
       // Legacy public-room regression check when running against the currently deployed build.
       await enterOnline(host);
-      await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await host.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Public Host');
       await host.getByRole('button', { name: 'Создать открытую комнату' }).click();
@@ -140,7 +140,7 @@ const TIMEOUT = 20000;
       await assertNoHorizontalOverflow(host, 'public room lobby');
 
       await enterOnline(guest);
-      await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
+      await guest.locator('#screen-online.active button[onclick*="public-rooms"]').click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Public Guest');
       await guest.getByText('CI Public Host', { exact: true }).waitFor();

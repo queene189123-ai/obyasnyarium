@@ -2,6 +2,7 @@
 <!-- Published build verification: 2026-10-21 -->
 <html lang="ru">
 <head>
+  <link rel="preconnect" href="https://s.adlook.tv">
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="sxoTBvntcqKedU5MwbQn121WO5e5zBy5FfF6l1-ajSI">
@@ -570,6 +571,27 @@ async function shareSite() {
   <div class="counter-row"><span>Онлайн-лобби создано</span><strong id="counter-online-lobbies">—</strong></div>
   <div class="counter-row"><span>Офлайн-лобби создано</span><strong id="counter-offline-lobbies">—</strong></div>
 </div>
+<!-- ===== Adlook: начало рекламного места «В контенте» ===== -->
+<div class="adlook-pc-wrapper" style="display:flex; flex-wrap:nowrap; justify-content:center; gap:5px; width:100%; max-width:1200px; margin:0 auto; min-height:225px; overflow-x:hidden;">
+  <div id="Adlk-1"></div>
+  <div id="Adlk-2"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
+  data-set-id="dbg61u7aimjs73b61g5g"
+  data-host="Adlk-1"
+  data-target="pc"></script>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
+  data-set-id="dbg620vaimjs73b61g60"
+  data-host="Adlk-2"
+  data-target="pc"></script>
+<div class="adlook-mob-wrapper" style="width:100%; padding:5px; box-sizing:border-box; min-height:235px;">
+  <div id="Adlk-mob"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
+  data-set-id="dbg623naimjs73b61g6g"
+  data-host="Adlk-mob"
+  data-target="mob"></script>
+<!-- ===== Adlook: конец рекламного места «В контенте» ===== -->
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
 
@@ -2372,5 +2394,20 @@ async function onlineLeaveRoom(){
 }
 
 </script>
+<!-- ===== Adlook: начало общего кода — ставится один раз ===== -->
+<style>
+  @media (max-width: 949px) { .adlook-pc-wrapper { display:none !important; } }
+  @media (min-width: 950px) { .adlook-mob-wrapper { display:none !important; } }
+</style>
+<!-- Fly-roll расположен сверху, чтобы не перекрывать кнопку отправки в онлайн-игре -->
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
+  data-set-id="dbg61rfaimjs73b61g50"
+  data-align="rt"
+  data-m-align="t"></script>
+<!-- Adlook core: ровно один экземпляр -->
+<script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer
+  data-delay-pc="200"
+  data-delay-mob="300"></script>
+<!-- ===== Adlook: конец общего кода ===== -->
 </body>
 </html>

@@ -91,7 +91,7 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
-      await guest.locator('#public-room-list .score-row').filter({ hasText: new RegExp('^Комната ' + roomNumber + '\\b') }).click();
+      await guest.locator('#public-room-list .score-row').filter({ hasText: roomLabel }).click();
       await guest.locator('#screen-online-lobby.active').waitFor();
       await host.getByText('CI Fixed Guest', { exact: true }).waitFor();
 
@@ -116,7 +116,7 @@ const TIMEOUT = 20000;
       await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Empty Room Check');
-      await host.locator('#public-room-list .score-row').filter({ hasText: new RegExp('^Комната ' + roomNumber + '\\b') }).click();
+      await host.locator('#public-room-list .score-row').filter({ hasText: roomLabel }).click();
       await host.locator('#screen-online-lobby.active').waitFor();
       await host.waitForTimeout(500);
       const emptyRoomChat = await host.locator('#fixed-room-chat').innerText();

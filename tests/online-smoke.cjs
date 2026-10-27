@@ -39,6 +39,9 @@ const TIMEOUT = 20000;
       } catch (_) {}
     });
     await page.reload({ waitUntil: 'domcontentloaded' });
+    // Explicitly reset the visible screen as well: cleanup may leave a stale
+    // lobby screen in memory even after session markers have been cleared.
+    await page.evaluate(() => { if (typeof go === 'function') go('home'); });
     await page.locator('#screen-home.active').waitFor();
     await page.getByRole('button', { name: 'Играть онлайн' }).click();
     await page.locator('#screen-online.active').waitFor();

@@ -30,8 +30,18 @@ const TIMEOUT = 20000;
 
   async function enterOnline(page) {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    // Start each test leg from a clean browser session; stale restore markers can
+    // otherwise reopen a previous lobby instead of showing the online menu.
+    await page.evaluate(() => {
+      try {
+        localStorage.removeItem('obyasnyarium_online_session');
+        sessionStorage.removeItem('obyasnyarium_restore_on_reload');
+      } catch (_) {}
+    });
+    await page.reload({ waitUntil: 'domcontentloaded' });
     await page.locator('#screen-home.active').waitFor();
     await page.getByRole('button', { name: 'Играть онлайн' }).click();
+    await page.locator('#screen-online.active').waitFor();
   }
 
   async function assertNoHorizontalOverflow(page, label) {

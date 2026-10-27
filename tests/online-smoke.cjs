@@ -60,8 +60,8 @@ const TIMEOUT = 20000;
       await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Fixed Host');
-      await host.getByText('Комната 3', { exact: false }).waitFor();
-      await host.getByText(/Комната 3/).click();
+      await host.getByText('Комната 2', { exact: false }).waitFor();
+      await host.getByText(/Комната 2/).click();
       try {
         await host.locator('#screen-online-lobby.active').waitFor({ timeout: 8000 });
       } catch (error) {
@@ -74,7 +74,7 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await guest.locator('#screen-public-rooms.active').waitFor();
       await guest.locator('#public-room-player-name').fill('CI Fixed Guest');
-      await guest.getByText(/Комната 3/).click();
+      await guest.getByText(/Комната 2/).click();
       await guest.locator('#screen-online-lobby.active').waitFor();
       await host.getByText('CI Fixed Guest', { exact: true }).waitFor();
 
@@ -99,7 +99,7 @@ const TIMEOUT = 20000;
       await host.getByRole('button', { name: 'Играть — найти открытую комнату' }).click();
       await host.locator('#screen-public-rooms.active').waitFor();
       await host.locator('#public-room-player-name').fill('CI Empty Room Check');
-      await host.getByText(/Комната 3/).click();
+      await host.getByText(/Комната 2/).click();
       await host.locator('#screen-online-lobby.active').waitFor();
       await host.waitForTimeout(500);
       const emptyRoomChat = await host.locator('#fixed-room-chat').innerText();

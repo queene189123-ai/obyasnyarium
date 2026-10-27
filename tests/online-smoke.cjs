@@ -106,7 +106,7 @@ const TIMEOUT = 20000;
       await guest.getByRole('button', { name: 'Готов', exact: false }).click();
       await host.locator('#screen-public-text-game.active').waitFor();
       await guest.locator('#screen-public-text-game.active').waitFor();
-      await host.locator('#public-text-start-btn').waitFor({ state: 'visible' });
+      // Fixed rooms start automatically once every player is ready; there is no host-only start button.
       await guest.waitForFunction(() => online.state?.status === 'pass' && online.state?.text_mode === true);
       console.log('PASS: fixed rooms, shared chat, readiness and automatic game start.');
 

@@ -59,11 +59,35 @@ const TIMEOUT = 20000;
 
   async function cleanup(page) {
     try {
+      const session = await page.evaluate(() => ({
+        playerId: online?.playerId || null,
+        playerToken: online?.playerToken || null,
+        fixed: !!online?.fixedRoomNumber,
+        roomId: online?.roomId || null
+      }));
+      if (!session.playerId || !session.playerToken) return;
       if (await page.locator('#online-hud-leave').isVisible()) {
         await page.locator('#online-hud-leave').click();
+      } else if (session.fixed) {
+        await page.evaluate(async ({ roomId, playerId, playerToken }) => {
+          await supabaseClient.rpc('leave_fixed_room', {
+            p_room_id: roomId, p_player_id: playerId, p_player_token: playerToken
+          });
+        }, session);
+      }
+      if (session.fixed) {
+        await page.waitForFunction(async playerId => {
+          const { data, error } = await supabaseClient.rpc('list_fixed_rooms');
+          return !error && (data || []).every(room =>
+            !(room.players || []).some(player => player.id === playerId)
+          );
+        }, session.playerId, { timeout: TIMEOUT });
+      } else {
         await page.waitForTimeout(700);
       }
-    } catch (_) {}
+    } catch (error) {
+      console.warn('Cleanup warning:', error.message);
+    }
   }
 
   try {

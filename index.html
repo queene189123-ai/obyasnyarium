@@ -1735,9 +1735,9 @@ function scheduleOnlineIdleCheck(){
 function noteOnlineUserActivity(){
   if(!online.roomId || !online.playerToken || onlineIdleExpired)return;
   const now=Date.now();
-  if(now-onlineLastActivityAt<10000)return;
+  const persist=now-onlineLastActivityAt>=10000;
   onlineLastActivityAt=now;
-  saveOnlineSession();
+  if(persist)saveOnlineSession();
   scheduleOnlineIdleCheck();
 }
 function startOnlineIdleTimer(){

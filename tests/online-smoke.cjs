@@ -30,6 +30,7 @@ const TIMEOUT = 20000;
 
   async function enterOnline(page) {
     await page.goto(BASE_URL, { waitUntil: 'domcontentloaded' });
+    await page.locator('#screen-home.active').waitFor();
     await page.getByRole('button', { name: 'Играть онлайн' }).click();
   }
 

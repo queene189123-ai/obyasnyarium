@@ -3,10 +3,6 @@
 <html lang="ru">
 <head>
   <link rel="preconnect" href="https://s.adlook.tv">
-  <!-- Adlook core: ровно один экземпляр -->
-  <script src="https://s.adlook.tv/vast-player/production/adLookInit.js"
-    data-delay-pc="200"
-    data-delay-mob="300"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="sxoTBvntcqKedU5MwbQn121WO5e5zBy5FfF6l1-ajSI">
@@ -580,6 +576,13 @@ async function shareSite() {
   <div id="Adlk-1"></div>
   <div id="Adlk-2"></div>
 </div>
+<div class="adlook-mob-wrapper" style="width:100%; padding:5px; box-sizing:border-box; min-height:235px;">
+  <div id="Adlk-mob"></div>
+</div>
+<!-- Adlook core loads after all placement containers exist -->
+<script src="https://s.adlook.tv/vast-player/production/adLookInit.js"
+  data-delay-pc="200"
+  data-delay-mob="300"></script>
 <script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
   data-set-id="dbg61u7aimjs73b61g5g"
   data-host="Adlk-1"
@@ -588,9 +591,6 @@ async function shareSite() {
   data-set-id="dbg620vaimjs73b61g60"
   data-host="Adlk-2"
   data-target="pc"></script>
-<div class="adlook-mob-wrapper" style="width:100%; padding:5px; box-sizing:border-box; min-height:235px;">
-  <div id="Adlk-mob"></div>
-</div>
 <script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
   data-set-id="dbg623naimjs73b61g6g"
   data-host="Adlk-mob"

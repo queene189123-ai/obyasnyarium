@@ -43,7 +43,9 @@ const TIMEOUT = 20000;
     // lobby screen in memory even after session markers have been cleared.
     await page.evaluate(() => { if (typeof go === 'function') go('home'); });
     await page.locator('#screen-home.active').waitFor();
-    await page.getByRole('button', { name: 'Играть онлайн' }).click();
+    const onlineButton = page.locator("#screen-home.active button[onclick=\"go('online')\"]");
+    await onlineButton.waitFor({ state: 'visible' });
+    await onlineButton.click();
     await page.locator('#screen-online.active').waitFor();
   }
 

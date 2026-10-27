@@ -2399,9 +2399,9 @@ function renderOnlineScore(){
   const board=document.getElementById('online-scoreboard'); board.innerHTML='';
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
-async function onlineLeaveRoom(expired=false){
+async function onlineLeaveRoom(){
+  const expired=onlineIdleExpired;
   clearOnlineIdleTimer();
-  if(expired)onlineIdleExpired=true;
   if(isFixedPublicRoom()){
     const leaving={p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken};
     supabaseClient.rpc('leave_fixed_room',leaving).then(({error})=>{if(error)console.warn('Не удалось очистить просроченную комнату:',error.message);}).catch(e=>console.warn('Не удалось очистить просроченную комнату:',e));
@@ -2409,7 +2409,7 @@ async function onlineLeaveRoom(expired=false){
     if(online.textMessageTimer)clearInterval(online.textMessageTimer);
     if(online.pollTimer)clearInterval(online.pollTimer);
     onlinePollGeneration++;
-    try{localStorage.removeItem(ONLINE_SESSION_KEY);}catch(e){}
+    try{localStorage.removeItem(ONLINE_SESSION_KEY);sessionStorage.removeItem('obyasnyarium_restore_on_reload');}catch(e){}
     online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
     onlineLastActivityAt=0;onlineIdleExpired=false;updateOnlineHud();
     go('public-rooms');listPublicRooms();

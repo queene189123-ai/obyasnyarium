@@ -519,6 +519,8 @@ async function shareSite() {
 <noscript><div><img src="https://mc.yandex.ru/watch/113805493" style="position:absolute; left:-9999px;" alt="" /></div></noscript>
 <!-- /Yandex.Metrika counter -->
 
+<link rel="preconnect" href="https://s.adlook.tv">
+
 </head>
 <body>
 <div id="online-room-hud"><span class="room-hud-code" id="online-hud-code"></span><span class="room-hud-connection" id="online-hud-connection">● На связи</span><div class="room-hud-actions"><button class="room-hud-stop" id="online-hud-leave" onclick="onlineLeaveRoom()">Выйти</button></div></div>
@@ -572,6 +574,20 @@ async function shareSite() {
 </div>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
+
+
+<!-- ===== Adlook: начало рекламного места «В контенте» ===== -->
+<div class="adlook-pc-wrapper" style="display:flex;flex-wrap:nowrap;justify-content:center;gap:5px;width:100%;max-width:1200px;margin:18px auto 0;min-height:225px;overflow-x:hidden;">
+  <div id="Adlk-1"></div>
+  <div id="Adlk-2"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61u7aimjs73b61g5g" data-host="Adlk-1" data-target="pc"></script>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg620vaimjs73b61g60" data-host="Adlk-2" data-target="pc"></script>
+<div class="adlook-mob-wrapper" style="width:100%;padding:5px;box-sizing:border-box;min-height:235px;margin-top:18px;">
+  <div id="Adlk-mob"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg623naimjs73b61g6g" data-host="Adlk-mob" data-target="mob"></script>
+<!-- ===== Adlook: конец рекламного места «В контенте» ===== -->
 
 <!-- ПРАВИЛА ИГРЫ -->
 <div class="screen" id="screen-rules">
@@ -2372,5 +2388,15 @@ async function onlineLeaveRoom(){
 }
 
 </script>
+
+<!-- ===== Adlook: начало общего кода — ставится один раз, на все страницы ===== -->
+<style>
+  @media (max-width: 949px) { .adlook-pc-wrapper { display: none !important; } }
+  @media (min-width: 950px) { .adlook-mob-wrapper { display: none !important; } }
+</style>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61rfaimjs73b61g50" data-align="rb"></script>
+<script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer data-delay-pc="200" data-delay-mob="300"></script>
+<!-- ===== Adlook: конец общего кода ===== -->
+
 </body>
 </html>

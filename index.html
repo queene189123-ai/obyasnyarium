@@ -3,6 +3,10 @@
 <html lang="ru">
 <head>
   <link rel="preconnect" href="https://s.adlook.tv">
+  <!-- Adlook core: ровно один экземпляр -->
+  <script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer
+    data-delay-pc="200"
+    data-delay-mob="300"></script>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta name="google-site-verification" content="sxoTBvntcqKedU5MwbQn121WO5e5zBy5FfF6l1-ajSI">
@@ -2399,16 +2403,12 @@ async function onlineLeaveRoom(){
   @media (max-width: 949px) { .adlook-pc-wrapper { display:none !important; } }
   @media (min-width: 950px) { .adlook-mob-wrapper { display:none !important; } }
 </style>
-<!-- Fly-roll отключён: он показывал видео поверх логотипа на первом экране. Оставлены только рекламные блоки внутри страницы. -->
 <!-- Fly-roll: четвёртый рекламный блок, согласно согласованной конфигурации -->
 <script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer
   data-set-id="dbg61rfaimjs73b61g50"
   data-align="rt"
   data-m-align="t"></script>
-<!-- Adlook core: ровно один экземпляр -->
-<script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer
-  data-delay-pc="200"
-  data-delay-mob="300"></script>
+
 <!-- ===== Adlook: конец общего кода ===== -->
 </body>
 </html>

@@ -1716,6 +1716,39 @@ function showOnlineJoin(){ go('online-join'); }
 function onlineShowName(){ go('online-name'); }
 let onlineVisibility = 'private';
 let publicRoomsRefreshTimer = null;
+const ONLINE_IDLE_TIMEOUT_MS = 30 * 60 * 1000;
+let onlineLastActivityAt = 0;
+let onlineIdleTimer = null;
+let onlineIdleExpired = false;
+let onlineActivityHandlersInstalled = false;
+function clearOnlineIdleTimer(){ if(onlineIdleTimer!==null){clearTimeout(onlineIdleTimer);onlineIdleTimer=null;} }
+function scheduleOnlineIdleCheck(){
+  clearOnlineIdleTimer();
+  if(!online.roomId || !online.playerToken || onlineIdleExpired || !onlineLastActivityAt)return;
+  const remaining=ONLINE_IDLE_TIMEOUT_MS-(Date.now()-onlineLastActivityAt);
+  onlineIdleTimer=setTimeout(()=>{
+    if(!online.roomId || !online.playerToken || onlineIdleExpired)return;
+    if(Date.now()-onlineLastActivityAt>=ONLINE_IDLE_TIMEOUT_MS){onlineIdleExpired=true;onlineLeaveRoom(true);}
+    else scheduleOnlineIdleCheck();
+  },Math.max(0,remaining));
+}
+function noteOnlineUserActivity(){
+  if(!online.roomId || !online.playerToken || onlineIdleExpired)return;
+  const now=Date.now();
+  if(now-onlineLastActivityAt<10000)return;
+  onlineLastActivityAt=now;
+  saveOnlineSession();
+  scheduleOnlineIdleCheck();
+}
+function startOnlineIdleTimer(){
+  if(!online.roomId || !online.playerToken)return;
+  if(!onlineLastActivityAt)onlineLastActivityAt=Date.now();
+  if(!onlineActivityHandlersInstalled){
+    onlineActivityHandlersInstalled=true;
+    ['pointerdown','keydown','touchstart','scroll','input'].forEach(eventName=>window.addEventListener(eventName,noteOnlineUserActivity,{passive:true}));
+  }
+  scheduleOnlineIdleCheck();
+}
 
 function onlinePrepareCreate(visibility){
   onlineVisibility = visibility === 'public' ? 'public' : 'private';
@@ -1760,6 +1793,7 @@ async function joinFixedRoom(roomNumber){
   online.playerId=playerId;online.playerToken=playerToken;online.name=name;
   online.roomId=data.id;online.code=data.code;online.hostId=data.host_id;
   online.state=data.game_state||{};online.version=data.version||0;online.fixedRoomNumber=roomNumber;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   try{localStorage.setItem('obyasnyarium_player_name',name);}catch(e){}
   saveOnlineSession();updateOnlineHud();onlineSubscribe();onlineRenderState();
 }
@@ -1791,6 +1825,7 @@ async function onlineCreateRoomInternal(){
   online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=created.id; online.code=created.code; online.hostId=created.host_id;
   online.state=created.game_state; online.version=created.version ?? 0;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   onlineVisibility='private';
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
   trackSessionCounterEvent('lobby_created', 'online', 'lobby-' + created.id);
@@ -1843,6 +1878,7 @@ async function onlineJoinRoomInternal(){
   online.playerId=playerId; online.playerToken=playerToken; online.name=name;
   online.roomId=data.id; online.code=data.code; online.hostId=data.host_id;
   online.state=joinedState; online.version=data.version ?? 0;
+  onlineLastActivityAt=Date.now();onlineIdleExpired=false;
   // Remove the invitation parameter after a successful join so refreshing this tab restores the joined room.
   try { const cleanUrl=new URL(location.href); cleanUrl.searchParams.delete('room'); history.replaceState(null,'',cleanUrl.pathname+cleanUrl.search+cleanUrl.hash); } catch(e) {}
   saveOnlineSession(); updateOnlineHud(); onlineSubscribe(); renderOnlineLobby(); go('online-lobby');
@@ -1883,7 +1919,8 @@ function saveOnlineSession(){
   try {
     localStorage.setItem(ONLINE_SESSION_KEY, JSON.stringify({
       roomId:online.roomId, code:online.code, playerId:online.playerId,
-      playerToken:online.playerToken, name:online.name, hostId:online.hostId
+      playerToken:online.playerToken, name:online.name, hostId:online.hostId,
+      lastActivityAt:onlineLastActivityAt || Date.now()
     }));
     // Маркер живёт только в текущей вкладке: после обновления восстановим комнату,
     // а при новом открытии сайта покажем главный экран.
@@ -1935,6 +1972,7 @@ async function restoreOnlineSession(manual=false){
   online.pollBusy=false;
   const restoreGeneration=onlinePollGeneration;
   online={...online,...saved,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
+  onlineLastActivityAt=Number(saved.lastActivityAt)||Date.now();onlineIdleExpired=false;
   const isCurrentRestore=()=>restoreGeneration===onlinePollGeneration &&
     online.roomId===saved.roomId && online.playerId===saved.playerId && online.playerToken===saved.playerToken;
   updateOnlineHud();
@@ -1972,6 +2010,7 @@ let onlinePollGeneration = 0;
 let onlineVisibilityHandler = null;
 let onlineNetworkHandlersInstalled = false;
 function onlineSubscribe(){
+  startOnlineIdleTimer();
   if(online.pollTimer) clearInterval(online.pollTimer);
   if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   // Invalidates any request from a previous room/session subscription.
@@ -1981,7 +2020,11 @@ function onlineSubscribe(){
   online.textMessageTimer=setInterval(()=>{if(online.state?.text_mode && online.roomId) onlineTextLoadMessages(false);},1500);
   // Keep global browser listeners outside the replaceable room-session object.
   if(!onlineVisibilityHandler){
-    onlineVisibilityHandler=()=>{if(document.visibilityState==='visible' && online.roomId) onlineSync();};
+    onlineVisibilityHandler=()=>{
+      if(document.visibilityState!=='visible' || !online.roomId)return;
+      if(onlineLastActivityAt && Date.now()-onlineLastActivityAt>=ONLINE_IDLE_TIMEOUT_MS){if(!onlineIdleExpired){onlineIdleExpired=true;onlineLeaveRoom(true);}return;}
+      scheduleOnlineIdleCheck();onlineSync();
+    };
     document.addEventListener('visibilitychange',onlineVisibilityHandler);
   }
   if(!onlineNetworkHandlersInstalled){
@@ -2356,15 +2399,22 @@ function renderOnlineScore(){
   const board=document.getElementById('online-scoreboard'); board.innerHTML='';
   [...getOnlinePlayers()].sort((a,b)=>(b.score||0)-(a.score||0)).forEach((p,i)=>{ const row=document.createElement('div'); row.className='score-row'; row.innerHTML=`<span class="rank">${i+1}</span><span class="pname">${escapeHtml(p.name)}</span><span class="pscore">${p.score||0}</span>`; board.appendChild(row); });
 }
-async function onlineLeaveRoom(){
+async function onlineLeaveRoom(expired=false){
+  clearOnlineIdleTimer();
+  if(expired)onlineIdleExpired=true;
   if(isFixedPublicRoom()){
-    await supabaseClient.rpc('leave_fixed_room',{p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken});
+    const leaving={p_room_id:online.roomId,p_player_id:online.playerId,p_player_token:online.playerToken};
+    supabaseClient.rpc('leave_fixed_room',leaving).then(({error})=>{if(error)console.warn('Не удалось очистить просроченную комнату:',error.message);}).catch(e=>console.warn('Не удалось очистить просроченную комнату:',e));
     if(fixedRoomChatTimer!==null){clearInterval(fixedRoomChatTimer);fixedRoomChatTimer=null;}
+    if(online.textMessageTimer)clearInterval(online.textMessageTimer);
     if(online.pollTimer)clearInterval(online.pollTimer);
     onlinePollGeneration++;
     try{localStorage.removeItem(ONLINE_SESSION_KEY);}catch(e){}
     online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,saving:false,version:0,state:null,connectionLost:false};
-    go('public-rooms');listPublicRooms();return;
+    onlineLastActivityAt=0;onlineIdleExpired=false;updateOnlineHud();
+    go('public-rooms');listPublicRooms();
+    if(expired)alert('Время ожидания истекло. Перезайдите в комнату.');
+    return;
   }
   if(online.textMessageTimer) clearInterval(online.textMessageTimer);
   // Invalidate in-flight polls/saves immediately, before awaiting the server.
@@ -2386,7 +2436,9 @@ async function onlineLeaveRoom(){
     sessionStorage.removeItem('obyasnyarium_restore_on_reload');
   } catch(e) {}
   online={roomId:null,code:null,playerId:null,playerToken:null,name:'',hostId:null,pollTimer:null,pollBusy:false,version:0,state:null};
+  onlineLastActivityAt=0;onlineIdleExpired=false;
   updateOnlineHud(); go('home');
+  if(expired)alert('Время ожидания истекло. Перезайдите в комнату.');
 }
 
 </script>

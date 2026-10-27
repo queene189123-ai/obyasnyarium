@@ -62,7 +62,12 @@ const TIMEOUT = 20000;
       await host.locator('#public-room-player-name').fill('CI Fixed Host');
       await host.getByText('Комната 3', { exact: false }).waitFor();
       await host.getByText(/Комната 3/).click();
-      await host.locator('#screen-online-lobby.active').waitFor();
+      try {
+        await host.locator('#screen-online-lobby.active').waitFor({ timeout: 8000 });
+      } catch (error) {
+        console.error('FIXED ROOM JOIN DEBUG:', JSON.stringify({ activeScreens: await host.locator('.screen.active').evaluateAll(nodes => nodes.map(node => node.id)), body: (await host.locator('body').innerText()).slice(0, 1600), dialogs }));
+        throw error;
+      }
       await assertNoHorizontalOverflow(host, 'fixed room lobby');
 
       await enterOnline(guest);

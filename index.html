@@ -570,6 +570,24 @@ async function shareSite() {
   <div class="counter-row"><span>Онлайн-лобби создано</span><strong id="counter-online-lobbies">—</strong></div>
   <div class="counter-row"><span>Офлайн-лобби создано</span><strong id="counter-offline-lobbies">—</strong></div>
 </div>
+<!-- Adlook in-content ads -->
+<style>
+  #adlook-incontent-pc { display:flex; flex-wrap:wrap; justify-content:center; gap:8px; width:100%; max-width:720px; margin:16px auto 0; overflow:hidden; }
+  #adlook-incontent-pc > div { flex:1 1 300px; min-width:0; min-height:250px; display:flex; justify-content:center; }
+  #adlook-incontent-mobile { display:none; width:100%; max-width:360px; min-height:250px; margin:16px auto 0; overflow:hidden; }
+  @media (max-width: 949px) { #adlook-incontent-pc { display:none; } #adlook-incontent-mobile { display:block; } }
+  @media (min-width: 950px) { #adlook-incontent-mobile { display:none; } }
+</style>
+<div id="adlook-incontent-pc" aria-label="Реклама">
+  <div id="Adlk-1"></div>
+  <div id="Adlk-2"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61u7aimjs73b61g5g" data-host="Adlk-1" data-target="pc"></script>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg620vaimjs73b61g60" data-host="Adlk-2" data-target="pc"></script>
+<div id="adlook-incontent-mobile" aria-label="Реклама">
+  <div id="Adlk-mob"></div>
+</div>
+<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg623naimjs73b61g6g" data-host="Adlk-mob" data-target="mob"></script>
 <div class="site-legal-links"><a href="./privacy.html">Конфиденциальность</a></div>
 </div>
 
@@ -2372,5 +2390,5 @@ async function onlineLeaveRoom(){
 }
 
 </script>
-</body>
+<!-- Adlook global initialization -->\n<link rel="preconnect" href="https://s.adlook.tv">\n<script src="https://s.adlook.tv/vast-player/production/adlkPlayerInit.js" defer data-set-id="dbg61rfaimjs73b61g50" data-align="rt" data-m-align="t"></script>\n<script src="https://s.adlook.tv/vast-player/production/adLookInit.js" defer data-delay-pc="200" data-delay-mob="300"></script>\n</body>
 </html>

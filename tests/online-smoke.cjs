@@ -47,6 +47,8 @@ const TIMEOUT = 20000;
     await onlineButton.waitFor({ state: 'visible' });
     await onlineButton.click();
     await page.locator('#screen-online.active').waitFor();
+    // Let the screen transition finish before interacting with its controls.
+    await page.waitForTimeout(450);
   }
 
   async function assertNoHorizontalOverflow(page, label) {
